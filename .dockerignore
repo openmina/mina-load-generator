@@ -1,3 +1,4 @@
 Dockerfile
 templates/
 Chart.yaml
+.dront.yml
