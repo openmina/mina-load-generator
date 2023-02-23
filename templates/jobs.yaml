@@ -1,0 +1,26 @@
+{{ range $i, $c := $.Values.calls }}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: send-{{ $i }}
+spec:
+  template:
+    spec:
+      containers:
+      - name: send
+        image: {{ $.Values.image.repository }}:{{ $.Values.image.tag | default "latest" }}
+        imagePullPolicy: {{ $.Values.image.pullPolicy }}
+        env:
+        - name: ADDRESS
+          value: {{ $c.address }}
+        - name: SENDER
+          value: {{ $c.sender }}
+        - name: NODE
+          value: {{ $c.node }}
+        args:
+        - --zk-app-address=$(ADDRESS)
+        - --sender=$(SENDER)
+        - --url=http://$(NODE)-graphql/graphql
+      restartPolicy: {{ $.Values.restartPolicy | default "OnFailure" }}
+{{ end }}
