@@ -2,43 +2,23 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-image:
+jobImage:
   repository: akoptelov/mina-sample-zkapp
   pullPolicy: Always
   # Overrides the image tag whose default is the chart appVersion.
   tag: ""
 
-calls:
-- address: EKEimo3GaDvf43R9ooKBvtk78QDtk8fHx6dSv5gMJVw5X8AApidD
-  sender: EKFaiCdRMYmM1kEiLvLRtdQ8sGMTdnuHwf6K6EDnhSbbH11gpxup
-  node: node1
-- address: EKESF3M7H8HLXzA557TuufPd3gMw1d9dNaExYnxAtK5DHiNCUuhj
-  sender: EKEBVQd13hQNMfDWxpxHtw4vrwKRJDL7XajiyoBqv6f4YEwHLDGp
-  node: node1
-- address: EKE2w9n1ZpEZ8kiWjdL6iTQJiUTPHCBjRTVmjAoy1aEh8F5QvtuD
-  sender: EKFBQTN1W2pEWtKYNHW4amYjm18GP4UHFGzRgBRrod9DqW6BTcaa
-  node: node1
-- address: EKE3Qde1NXCuRv3MQEKiXUQUnu53GrpSg7bx4FyWPGW7V2h4sc7q
-  sender: EKF2gCphKUWLT2xxspqQSDLc4WGpmjubzMQjAprWctz4RRbfFra5
-  node: node1
-- address: EKEGbjJ8ZKZadjgfiEaxmbbhXyZ7mmua6yhbFD1FjK9udW6RPVB6
-  sender: EKEo69RM5Ny1yM3z2ch4zx8hrQ481r67e3Did4avEiBWWFtkqcgY
-  node: node1
-- address: EKDhVdBTX3Ywi5gnZ5varFGSf6MNiLiGkjHYyNci4pHKniuCYh29
-  sender: EKEP7XzLjeYVSR2KEGj8bVqWJd5FmucZJ7SAosHzDcVR95wFdVaf
-  node: node1
-- address: EKEtApvWXWP24tYdnnkrWEpiEXi8jM9EJ9oyoL38BR2h3Guo2u2U
-  sender: EKELLKgzDzheiQkQcJ2Jtbm4iGooYYpjXAUPtJXVs1b7CmX6U1b8
-  node: node1
-- address: EKERdDHh6xnX2VBzNpRgMnpgXbxfxvsrRkCmGfa2VePjZwcyzNka
-  sender: EKDxKGwK7y5Cw7FjFn5d8EGiZppSZiWG3uYzEqpaDDFCS9NSkbqx
-  node: node1
-- address: EKDq7AdisPoHNG3GSn34XHqKQDKhsszwygtmwbgjxzFHkd2aiGFQ
-  sender: EKEgvw79MLDDGtwYVkpvcRA9erfU2ggA4xB2iMhfTErjQPFaQFEt
-  node: node1
-- address: EKE5WXywUNqyPoNpU8D9682z6fxcnUdDMQaQN4x6K1wmC8sYXWa1
-  sender: EKF7UKk2FK7AcHnf5YvXiYG565pC713Ln8YDJsyoyDK1wM9ppKDK
-  node: node1
+controllerImage:
+  repository: akoptelov/mina-sample-zkapp-controller
+  pullPolicy: Always
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: ""
+
+transactionCount: 1024
+parallelism: 64
+config: controller-config.json
+cpu: 16
+mem: "8G"
 
 restartPolicy: Never
 

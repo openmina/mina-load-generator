@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: controller
+  labels:
+    app: controller
+spec:
+  selector:
+    matchLabels:
+      app: controller
+  template:
+    metadata:
+      labels:
+        app: controller
+    spec:
+      containers:
+      - name: controller
+        image: {{ $.Values.controllerImage.repository }}:{{ $.Values.controllerImage.tag | default "latest" }}
+        imagePullPolicy: {{ $.Values.controllerImage.pullPolicy }}
+        args:
+        - --port=80
+        - /conf/config.json
+        ports:
+        - containerPort: 80
+          name: http
+        volumeMounts:
+        - name: conf
+          mountPath: /conf
+      volumes:
+      - name: conf
+        configMap:
+          name: conf
+          items:
+          - key: config.json
+            path: config.json
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: controller
+spec:
+  selector:
+    app: controller
+  ports:
+  - protocol: TCP
+    name: http
+    port: 80
+    targetPort: http
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: conf
+data:
+  config.json: |
+    {{ .Files.Get $.Values.config | nindent 6 }}
