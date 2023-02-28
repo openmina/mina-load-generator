@@ -33,6 +33,7 @@ steps:
   image: plugins/docker
   settings:
     context: jobs-controller
+    dockerfile: jobs-controller/Dockerfile
     password:
       from_secret: local_docker_hub_password
     repo: akoptelov/mina-sample-zkapp-controller
