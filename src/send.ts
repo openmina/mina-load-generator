@@ -211,7 +211,9 @@ program
     const url = config.node;
     const feePayerKey = config.sender;
     const sender = PrivateKey.fromBase58(feePayerKey);
-    log.info(`sending zkapps using ${sender.toPublicKey()} via ${url}`);
+    log.info(
+      `sending zkapps using ${sender.toPublicKey().toBase58()} via ${url}`
+    );
 
     log.debug('activating Mina network connection...');
     const Network = Mina.Network(url);
