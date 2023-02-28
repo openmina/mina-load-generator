@@ -198,10 +198,6 @@ program
 program
   .command('job')
   .option('-z, --zkapp-key <private-key>', 'zkApp address')
-  .requiredOption(
-    '-f, --fee-payer-key <private-key>',
-    'sender of the zkApp invocation'
-  )
   .requiredOption('-c, --controller <url>', 'Job controller')
   .option('-c, --count <n>', 'count of zkApp transactions in sequence', '1')
   .action(async function (opts: {
