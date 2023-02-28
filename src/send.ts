@@ -10,7 +10,7 @@ import {
 import { Add } from './Add.js';
 import { Command } from '@commander-js/extra-typings';
 import { Logger } from 'tslog';
-import { Account } from 'snarkyjs/dist/node/lib/fetch.js';
+import { Account } from 'snarkyjs/dist/node/lib/mina/account.js';
 import fetch from 'node-fetch';
 
 const log = new Logger();
