@@ -7,11 +7,14 @@ import {
   PublicKey,
   AccountUpdate,
 } from 'snarkyjs';
-import { Add } from './Add.js';
+//import { Add } from './Add.js';
 import { Command } from '@commander-js/extra-typings';
 import { Logger } from 'tslog';
 import { Account } from 'snarkyjs/dist/node/lib/mina/account.js';
 import fetch from 'node-fetch';
+// import { MultiAcc } from './MultiAcc.js';
+import { SingleAcc } from './SingleAcc.js';
+// import { Add } from './Add.js';
 
 const log = new Logger();
 const program = new Command();
@@ -28,12 +31,18 @@ async function fetchAcc(publicKey: PublicKey, url: string): Promise<Account> {
 class ZkApp {
   url: string;
   key: PrivateKey;
-  zk: Add;
+  zk: SingleAcc;
+
+  static async mk(key: PrivateKey, url: string): Promise<ZkApp> {
+    log.debug('compiling zkapp...');
+    await SingleAcc.compile();
+    return new ZkApp(key, url);
+  }
 
   constructor(key: PrivateKey, url: string) {
     this.key = key;
     this.url = url;
-    this.zk = new Add(key.toPublicKey());
+    this.zk = new SingleAcc(key.toPublicKey());
   }
 
   publicKey(): PublicKey {
@@ -68,16 +77,21 @@ class ZkApp {
     let tx = await Mina.transaction(
       { fee: 1e9, sender: feePayer.toPublicKey(), nonce },
       () => {
-        this.zk.update();
+        this.zk.deposit();
       }
     );
+    log.debug(`transaction: ${tx.toJSON()}`);
 
-    log.debug('generating a proof...');
-    await tx.prove();
-
-    log.debug('signing and sending the transaction...');
-    let sentTx = await tx.sign([feePayer]).send();
-    return sentTx;
+    try {
+      log.debug('generating a proof...');
+      await tx.prove();
+      log.debug('signing and sending the transaction...');
+      let sentTx = await tx.sign([feePayer, this.key]).send();
+      return sentTx;
+    } catch (e) {
+      log.error(`error proving/singning/sending the transaction: ${e}`);
+      throw e;
+    }
   }
 }
 
@@ -126,13 +140,11 @@ program
     log.debug(`publicKey: ${zkappKey.toPublicKey().toBase58()}`);
     log.debug(`privateKey: ${zkappKey.toBase58()}`);
 
-    let zkapp = new ZkApp(zkappKey, opts.url);
+    let zkapp = await ZkApp.mk(zkappKey, opts.url);
 
     let txSent = await zkapp.deploy(PrivateKey.fromBase58(opts.feePayerKey));
-    if (txSent.hash()) {
+    if (txSent?.hash()) {
       log.info('transaction sent: %s', txSent.hash());
-    } else {
-      throw txSent;
     }
 
     if (opts.wait) {
@@ -148,6 +160,7 @@ program
     '-f, --fee-payer-key <private-key>',
     'sender of the zkApp invocation'
   )
+  // .requiredOption('-r, --receiver <public-key>', 'payoff receiver')
   .requiredOption('-u, --url <url>', 'GraphQL endpoint')
   .option('-c, --count <n>', 'count of zkApp transactions in sequence', '1')
   .option(
@@ -158,6 +171,7 @@ program
   .action(async function (opts: {
     zkappKey?: string;
     feePayerKey: string;
+    // receiver: string;
     url: string;
     count: string;
     period: string;
@@ -171,12 +185,11 @@ program
       zkappKey = PrivateKey.fromBase58(opts.zkappKey);
     } else {
       zkappKey = PrivateKey.random();
+      log.debug('publicKey %s', zkappKey.toPublicKey().toBase58());
+      log.debug('privateKey %s', zkappKey.toBase58());
     }
-    log.debug('using publicKey %s', zkappKey.toPublicKey().toBase58());
 
-    log.debug('compiling smart contract...');
-    Add.compile();
-    let zkapp = new ZkApp(zkappKey, opts.url);
+    let zkapp = await ZkApp.mk(zkappKey, opts.url);
 
     const sender = PrivateKey.fromBase58(opts.feePayerKey);
 
@@ -189,8 +202,9 @@ program
 
     const account = await fetchAcc(sender.toPublicKey(), opts.url);
     let nonce = parseInt(account.nonce.toString());
+    // let receiver = PublicKey.fromBase58(opts.receiver);
     for (let i = 0; i < parseInt(opts.count); i++) {
-      let txSent = await zkapp.call(sender, nonce++);
+      let txSent = await zkapp.call(sender, nonce++); // TODO
       log.info(`transaction #${i} sent: ${txSent.hash()}`);
     }
   });
@@ -206,7 +220,7 @@ program
     count: string;
   }) {
     const response = await fetch(opts.controller);
-    const config: any = await response.json();
+    const config = (await response.json()) as { node: string; sender: string };
 
     const url = config.node;
     const feePayerKey = config.sender;
@@ -227,9 +241,7 @@ program
     }
     log.debug('using publicKey %s', zkappKey.toPublicKey().toBase58());
 
-    log.debug('compiling smart contract...');
-    Add.compile();
-    let zkapp = new ZkApp(zkappKey, url);
+    let zkapp = await ZkApp.mk(zkappKey, url);
 
     if (!opts.zkappKey) {
       log.debug('deploying...');
@@ -240,6 +252,7 @@ program
 
     const account = await fetchAcc(sender.toPublicKey(), url);
     let nonce = parseInt(account.nonce.toString());
+    // let receiver = PublicKey.fromBase58(config.receiver);
     for (let i = 0; i < parseInt(opts.count); i++) {
       let txSent = await zkapp.call(sender, nonce++);
       log.info(`transaction #${i} sent: ${txSent.hash()}`);
