@@ -75,7 +75,7 @@ steps:
   environment:
     KUBECONFIG: kube-config
   commands:
-  - helm install $${RELEASE_NAME} . $${COUNT:+--set=transactionCount=$${COUNT}} --set=suffix=$${SUFFIX} --set=parallelism=1
+  - helm install $${RELEASE_NAME} . $${COUNT:+--set=transactionCount=$${COUNT}} $${PARALLELISM:+--set=parallelism=$${PARALLELISM}} --set=suffix=$${SUFFIX}
 
 - name: run
   image: alpine/k8s:1.26.1
