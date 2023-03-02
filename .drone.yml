@@ -96,10 +96,11 @@ steps:
   environment:
     KUBECONFIG: kube-config
   commands:
-  - kubectl wait --for=jsonpath='{.status.conditions[*].status}'=True job/send-zkapps-$${SUFFIX} --timeout=180s
-  - ERR=$$?
-  - kubectl get job/send-zkapps-$${SUFFIX} -o jsonpath='{.status.conditions[?(@.status=="True")].message}'
-  - exit $$ERR
+  - |
+    kubectl wait --for=jsonpath='{.status.conditions[*].status}'=True job/send-zkapps-$${SUFFIX} --timeout=180s
+    MSG=$$(kubectl get job/send-zkapps-$${SUFFIX} -o jsonpath='{.status.conditions[?(@.status=="True")].message}')
+    TYPE=$$(kubectl get job/send-zkapps-$${SUFFIX} -o jsonpath='{.status.conditions[?(@.status=="True")].type}')
+    if [ "$${TYPE}" != "Complete" ]; then echo "Error running job: $${MSG}"; exit 1; fi
 
 - name: clean-up
   image: alpine/k8s:1.26.1
