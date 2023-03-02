@@ -96,7 +96,7 @@ steps:
   environment:
     KUBECONFIG: kube-config
   commands:
-  - kubectl wait --for=jsonpath='{.status.ready}'=0 job/send-zkapps-$${SUFFIX} --timeout=180s
+  - kubectl wait --for=jsonpath='{.status.conditions[*].status}'=True job/send-zkapps-$${SUFFIX} --timeout=180s
   - ERR=$$?
   - kubectl get job/send-zkapps-$${SUFFIX} -o jsonpath='{.status.conditions[*].message}'
   - exit $$ERR
