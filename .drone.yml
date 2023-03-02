@@ -55,7 +55,7 @@ trigger:
 environment:
   RELEASE_NAME: zkapps-drone-${DRONE_BUILD_NUMBER}
   PREFIX: ${DRONE_BUILD_NUMBER}
-  COUNT: 1024
+  COUNT: 1
   NAMESPACE: default
 
 steps:
