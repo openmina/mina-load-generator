@@ -29,7 +29,7 @@ spec:
       volumes:
       - name: conf
         configMap:
-          name: conf
+          name: {{ include "mina-sample-zkapp.service-name" . }}
           items:
           - key: config.json
             path: config.json
@@ -52,7 +52,7 @@ spec:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: conf
+  name: {{ include "mina-sample-zkapp.service-name" . }}
 data:
   config.json: |
     {{ .Files.Get $.Values.config | nindent 6 }}
