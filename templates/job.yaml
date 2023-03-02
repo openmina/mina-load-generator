@@ -50,3 +50,4 @@ spec:
             memory: {{ $.Values.mem }}
             {{ end }}
       restartPolicy: {{ $.Values.restartPolicy | default "OnFailure" }}
+  backoffLimit: 2
