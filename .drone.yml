@@ -96,9 +96,9 @@ steps:
   environment:
     KUBECONFIG: kube-config
   commands:
-  - kubectl wait --for=jsonpath='{.status.ready}'=0 job/send-zkapps-$${SUFFIX} --timeout=600s
+  - kubectl wait --for=jsonpath='{.status.ready}'=0 job/send-zkapps-$${SUFFIX} --timeout=180s
   - ERR=$$?
-  - kubectl -n default get job/send-zkapps-44 --subresource=status -o jsonpath='{.status.conditions[*].message}'
+  - kubectl get job/send-zkapps-$${SUFFIX}-o jsonpath='{.status.conditions[*].message}'
   - exit $$ERR
 
 - name: clean-up
