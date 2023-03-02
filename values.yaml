@@ -20,10 +20,7 @@ config: controller-config.json
 cpu: 16
 mem: "8G"
 
-restartPolicy: Never
-
 podAnnotations: {}
-
 
 resources: {}
   # We usually recommend not to specify default resources and to leave this as a conscious
