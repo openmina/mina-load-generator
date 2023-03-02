@@ -60,7 +60,7 @@ environment:
 
 steps:
 - name: configure
-  image: alpine/k8s
+  image: alpine/k8s:1.25.6
   environment:
     DRONE_KUBECONFIG:
       from_secret: local_kubeconfig
@@ -72,14 +72,14 @@ steps:
   - kubectl config set-context --current --namespace $${NAMESPACE}
 
 - name: start
-  image: alpine/k8s
+  image: alpine/k8s:1.25.6
   environment:
     KUBECONFIG: kube-config
   commands:
   - helm install $${RELEASE_NAME} . --set=transactionCount=$${COUNT} --set=prefix=$${PREFIX} --set=parallelism=1
 
 - name: run
-  image: alpine/k8s
+  image: alpine/k8s:1.25.6
   environment:
     KUBECONFIG: kube-config
   commands:
@@ -87,14 +87,14 @@ steps:
   - kubectl logs jobs/send-zkapps-$${PREFIX} --container=send --follow
 
 - name: finish
-  image: alpine/k8s
+  image: alpine/k8s:1.25.6
   environment:
     KUBECONFIG: kube-config
   commands:
   - kubectl wait --for=condition=complete job/send-zkapps-$${PREFIX} --timeout=1800s
 
 - name: uninstall
-  image: alpine/k8s
+  image: alpine/k8s:1.25.6
   environment:
     KUBECONFIG: kube-config
   commands:
