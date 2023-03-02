@@ -79,15 +79,22 @@ steps:
   environment:
     KUBECONFIG: kube-config
   commands:
-  - helm install $${RELEASE_NAME} . --set=transactionCount=$${COUNT:-1} --set=suffix=$${SUFFIX} --set=parallelism=1
+  - echo helm install $${RELEASE_NAME} . $${COUNT:+--set=transactionCount=$${COUNT}} --set=suffix=$${SUFFIX} --set=parallelism=1
+  - helm install $${RELEASE_NAME} . $${COUNT:+--set=transactionCount=$${COUNT}} --set=suffix=$${SUFFIX} --set=parallelism=1
 
 - name: run
   image: alpine/k8s:1.25.6
   environment:
     KUBECONFIG: kube-config
   commands:
-  - sleep 5
-  - kubectl logs jobs/send-zkapps-$${SUFFIX} --container=send --follow
+  - |
+    for t in $(seq 10); do
+        kubectl logs jobs/send-zkapps-$${SUFFIX} --container=send --follow && exit
+        echo "Waiting for send container..."
+        sleep 5
+    done
+    echo "Failed to wait for send container"
+    exit 1
 
 - name: finish
   image: alpine/k8s:1.25.6
@@ -96,9 +103,13 @@ steps:
   commands:
   - kubectl wait --for=condition=complete job/send-zkapps-$${SUFFIX} --timeout=1800s
 
-- name: uninstall
+- name: clean-up
   image: alpine/k8s:1.25.6
   environment:
     KUBECONFIG: kube-config
   commands:
   - helm uninstall $${RELEASE_NAME}
+  when:
+    status:
+    - success
+    - failure
