@@ -49,5 +49,5 @@ spec:
             {{ if $.Values.mem }}
             memory: {{ $.Values.mem }}
             {{ end }}
-      backoffLimit: 2
       restartPolicy: {{ $.Values.restartPolicy | default "OnFailure" }}
+  backoffLimit: 2
