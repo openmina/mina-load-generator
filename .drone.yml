@@ -54,7 +54,7 @@ trigger:
 
 environment:
   RELEASE_NAME: zkapps-drone-${DRONE_BUILD_NUMBER}
-  PREFIX: ${DRONE_BUILD_NUMBER}
+  SUFFIX: ${DRONE_BUILD_NUMBER}
   COUNT: 1
   NAMESPACE: default
 
@@ -76,7 +76,7 @@ steps:
   environment:
     KUBECONFIG: kube-config
   commands:
-  - helm install $${RELEASE_NAME} . --set=transactionCount=$${COUNT} --set=prefix=$${PREFIX} --set=parallelism=1
+  - helm install $${RELEASE_NAME} . --set=transactionCount=$${COUNT} --set=suffix=$${SUFFIX} --set=parallelism=1
 
 - name: run
   image: alpine/k8s:1.25.6
@@ -84,14 +84,14 @@ steps:
     KUBECONFIG: kube-config
   commands:
   - sleep 5
-  - kubectl logs jobs/send-zkapps-$${PREFIX} --container=send --follow
+  - kubectl logs jobs/send-zkapps-$${SUFFIX} --container=send --follow
 
 - name: finish
   image: alpine/k8s:1.25.6
   environment:
     KUBECONFIG: kube-config
   commands:
-  - kubectl wait --for=condition=complete job/send-zkapps-$${PREFIX} --timeout=1800s
+  - kubectl wait --for=condition=complete job/send-zkapps-$${SUFFIX} --timeout=1800s
 
 - name: uninstall
   image: alpine/k8s:1.25.6
