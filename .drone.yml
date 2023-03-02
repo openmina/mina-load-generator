@@ -59,7 +59,7 @@ environment:
 steps:
 
 - name: configure
-  image: alpine/k8s:1.25.6
+  image: alpine/k8s:1.26.1
   environment:
     DRONE_KUBECONFIG:
       from_secret: local_kubeconfig
@@ -71,14 +71,14 @@ steps:
   - kubectl config set-context --current --namespace $${NAMESPACE:-default}
 
 - name: start
-  image: alpine/k8s:1.25.6
+  image: alpine/k8s:1.26.1
   environment:
     KUBECONFIG: kube-config
   commands:
   - helm install $${RELEASE_NAME} . $${COUNT:+--set=transactionCount=$${COUNT}} --set=suffix=$${SUFFIX} --set=parallelism=1
 
 - name: run
-  image: alpine/k8s:1.25.6
+  image: alpine/k8s:1.26.1
   environment:
     KUBECONFIG: kube-config
   commands:
@@ -92,17 +92,17 @@ steps:
     exit 1
 
 - name: finish
-  image: alpine/k8s:1.25.6
+  image: alpine/k8s:1.26.1
   environment:
     KUBECONFIG: kube-config
   commands:
   - kubectl wait --for=jsonpath='{.status.conditions[*].status}'=True job/send-zkapps-$${SUFFIX} --timeout=180s
   - ERR=$$?
-  - kubectl get job/send-zkapps-$${SUFFIX} -o jsonpath='{.status.conditions[*].message}'
+  - kubectl get job/send-zkapps-$${SUFFIX} -o jsonpath='{.status.conditions[?(@.status=="True")].message}'
   - exit $$ERR
 
 - name: clean-up
-  image: alpine/k8s:1.25.6
+  image: alpine/k8s:1.26.1
   environment:
     KUBECONFIG: kube-config
   commands:
