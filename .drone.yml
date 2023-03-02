@@ -55,10 +55,13 @@ trigger:
 environment:
   RELEASE_NAME: zkapps-drone-${DRONE_BUILD_NUMBER}
   SUFFIX: ${DRONE_BUILD_NUMBER}
-  COUNT: 1
-  NAMESPACE: default
 
 steps:
+- name: debug
+  image: alpine/k8s:1.25.6
+  commands:
+  - printenv
+
 - name: configure
   image: alpine/k8s:1.25.6
   environment:
@@ -69,14 +72,14 @@ steps:
   - umask 0077
   - mkdir -p $HOME/.kube
   - echo "$DRONE_KUBECONFIG" > kube-config
-  - kubectl config set-context --current --namespace $${NAMESPACE}
+  - kubectl config set-context --current --namespace $${NAMESPACE:-default}
 
 - name: start
   image: alpine/k8s:1.25.6
   environment:
     KUBECONFIG: kube-config
   commands:
-  - helm install $${RELEASE_NAME} . --set=transactionCount=$${COUNT} --set=suffix=$${SUFFIX} --set=parallelism=1
+  - helm install $${RELEASE_NAME} . --set=transactionCount=$${COUNT:-1} --set=suffix=$${SUFFIX} --set=parallelism=1
 
 - name: run
   image: alpine/k8s:1.25.6
