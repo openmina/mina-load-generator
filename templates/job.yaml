@@ -1,13 +1,13 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: send-zkapps
+  name: {{ include "mina-sample-zkapp.job-name" . }}
 spec:
   parallelism: {{ $.Values.parallelism | default 1 }}
   template:
     metadata:
       labels:
-        app: send-zkapps
+        app:  {{ include "mina-sample-zkapp.job-name" . }}
     spec:
       # affinity:
       #   podAntiAffinity:

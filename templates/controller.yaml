@@ -1,17 +1,17 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: controller
+  name: {{ include "mina-sample-zkapp.service-name" . }}
   labels:
-    app: controller
+    app: {{ include "mina-sample-zkapp.service-name" . }}
 spec:
   selector:
     matchLabels:
-      app: controller
+      app: {{ include "mina-sample-zkapp.service-name" . }}
   template:
     metadata:
       labels:
-        app: controller
+        app: {{ include "mina-sample-zkapp.service-name" . }}
     spec:
       containers:
       - name: controller
@@ -38,10 +38,10 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: controller
+  name: {{ include "mina-sample-zkapp.service-name" . }}
 spec:
   selector:
-    app: controller
+    app: {{ include "mina-sample-zkapp.service-name" . }}
   ports:
   - protocol: TCP
     name: http

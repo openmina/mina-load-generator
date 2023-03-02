@@ -60,3 +60,25 @@ Create the name of the service account to use
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
+
+{{/*
+Job name
+*/}}
+{{- define "mina-sample-zkapp.job-name" -}}
+{{- if .Values.suffix -}}
+send-zkapps-{{ .Values.suffix }}
+{{- else -}}
+send-zkapps
+{{- end -}}
+{{- end -}}
+
+{{/*
+Service name
+*/}}
+{{- define "mina-sample-zkapp.service-name" -}}
+{{- if .Values.suffix -}}
+send-zkapps-controller-{{ .Values.suffix }}
+{{- else -}}
+send-zkapps-controller
+{{- end -}}
+{{- end -}}

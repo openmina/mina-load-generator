@@ -1,3 +1,4 @@
+---
 kind: pipeline
 name: build-image
 type: docker
@@ -42,3 +43,59 @@ steps:
     - latest
     username:
       from_secret: local_docker_hub_username
+
+---
+kind: pipeline
+name: run-zkapps
+type: docker
+
+trigger:
+  event: [ custom ]
+
+environment:
+  RELEASE_NAME: zkapps-drone-${DRONE_BUILD_NUMBER}
+  PREFIX: ${DRONE_BUILD_NUMBER}
+  COUNT: 1024
+  NAMESPACE: default
+
+steps:
+- name: configure
+  image: alpine/helm:3.8.1
+  environment:
+    DRONE_KUBECONFIG:
+      from_secret: local_kubeconfig
+    KUBECONFIG: kube-config
+  commands:
+  - umask 0077
+  - mkdir -p $HOME/.kube
+  - echo "$DRONE_KUBECONFIG" > kube-config
+  - kubectl config set-context --current --namespace $${NAMESPACE}
+
+- name: start
+  image: alpine/helm:3.8.1
+  environment:
+    KUBECONFIG: kube-config
+  commands:
+  - helm install $${RELEASE_NAME} . --set=transactionCount=$${COUNT} --set=prefix=$${PREFIX} --set=parallelism=1
+
+- name: run
+  image: alpine/helm:3.8.1
+  environment:
+    KUBECONFIG: kube-config
+  commands:
+  - sleep 5
+  - kubectl logs jobs/send-zkapps-$${PREFIX} --container=send --follow
+
+- name: finish
+  image: alpine/helm:3.8.1
+  environment:
+    KUBECONFIG: kube-config
+  commands:
+  - kubectl wait --for=condition=complete job/send-zkapps-$${PREFIX} --timeout=1800s
+
+- name: uninstall
+  image: alpine/helm:3.8.1
+  environment:
+    KUBECONFIG: kube-config
+  commands:
+  - helm uninstall $${RELEASE_NAME}
