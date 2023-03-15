@@ -14,8 +14,8 @@ import { Account } from 'snarkyjs/dist/node/lib/mina/account.js';
 import fetch from 'node-fetch';
 import { setTimeout } from 'timers/promises';
 // import { MultiAcc } from './MultiAcc.js';
-import { SingleAcc } from './SingleAcc.js';
-// import { Add } from './Add.js';
+// import { SingleAcc } from './SingleAcc.js';
+import { Add } from './Add.js';
 
 const log = new Logger();
 const program = new Command();
@@ -32,18 +32,18 @@ async function fetchAcc(publicKey: PublicKey, url: string): Promise<Account> {
 class ZkApp {
   url: string;
   key: PrivateKey;
-  zk: SingleAcc;
+  zk: Add;
 
   static async mk(key: PrivateKey, url: string): Promise<ZkApp> {
     log.debug('compiling zkapp...');
-    await SingleAcc.compile();
+    await Add.compile();
     return new ZkApp(key, url);
   }
 
   constructor(key: PrivateKey, url: string) {
     this.key = key;
     this.url = url;
-    this.zk = new SingleAcc(key.toPublicKey());
+    this.zk = new Add(key.toPublicKey());
   }
 
   publicKey(): PublicKey {
@@ -78,7 +78,7 @@ class ZkApp {
     let tx = await Mina.transaction(
       { fee: 1e9, sender: feePayer.toPublicKey(), nonce },
       () => {
-        this.zk.deposit();
+        this.zk.update();
       }
     );
     log.debug(`transaction: ${tx.toJSON()}`);
