@@ -12,6 +12,7 @@ import { Command } from '@commander-js/extra-typings';
 import { Logger } from 'tslog';
 import { Account } from 'snarkyjs/dist/node/lib/mina/account.js';
 import fetch from 'node-fetch';
+import { setTimeout } from 'timers/promises';
 // import { MultiAcc } from './MultiAcc.js';
 import { SingleAcc } from './SingleAcc.js';
 // import { Add } from './Add.js';
@@ -219,7 +220,7 @@ program
     controller: string;
     count: string;
   }) {
-    const response = await fetch(opts.controller);
+    const response = await fetch(`${opts.controller}/init`);
     const config = (await response.json()) as { node: string; sender: string };
 
     const url = config.node;
@@ -248,6 +249,19 @@ program
       await zkapp.deploy(sender);
       log.debug('waiting for funding...');
       await zkapp.waitForFunding();
+    }
+
+    let ready = false;
+    while (!ready) {
+      const res = await fetch(
+        `${opts.controller}/ready/${zkappKey.toPublicKey().toBase58()}`,
+        { method: 'head' }
+      );
+      ready = Boolean(res.headers.get('X-All-Ready'));
+      if (!ready) {
+        log.info('Other jobs are not ready yet. Waiting...');
+        await setTimeout(30 * 1000);
+      }
     }
 
     const account = await fetchAcc(sender.toPublicKey(), url);
