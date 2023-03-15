@@ -220,7 +220,11 @@ program
     controller: string;
     count: string;
   }) {
-    const response = await fetch(`${opts.controller}/init`);
+    let controller = opts.controller;
+    if (controller.endsWith('/')) {
+      controller = controller.substring(0, controller.length - 1);
+    }
+    const response = await fetch(`${controller}/init`);
     const config = (await response.json()) as { node: string; sender: string };
 
     const url = config.node;
@@ -254,13 +258,13 @@ program
     let ready = false;
     while (!ready) {
       const res = await fetch(
-        `${opts.controller}/ready/${zkappKey.toPublicKey().toBase58()}`,
+        `${controller}/ready/${zkappKey.toPublicKey().toBase58()}`,
         { method: 'head' }
       );
       ready = Boolean(res.headers.get('X-All-Ready'));
       if (!ready) {
         log.info('Other jobs are not ready yet. Waiting...');
-        await setTimeout(30 * 1000);
+        await setTimeout(5 * 1000);
       }
     }
 
