@@ -261,7 +261,7 @@ program
         `${controller}/ready/${zkappKey.toPublicKey().toBase58()}`,
         { method: 'head' }
       );
-      ready = Boolean(res.headers.get('X-All-Ready'));
+      ready = res.headers.get('X-All-Ready') === 'true';
       if (!ready) {
         log.info('Other jobs are not ready yet. Waiting...');
         await setTimeout(5 * 1000);
