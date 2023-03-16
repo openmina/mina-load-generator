@@ -214,18 +214,17 @@ program
   .command('job')
   .option('-z, --zkapp-key <private-key>', 'zkApp address')
   .requiredOption('-c, --controller <url>', 'Job controller')
-  .option('-c, --count <n>', 'count of zkApp transactions in sequence', '1')
-  .action(async function (opts: {
-    zkappKey?: string;
-    controller: string;
-    count: string;
-  }) {
+  .action(async function (opts: { zkappKey?: string; controller: string }) {
     let controller = opts.controller;
     if (controller.endsWith('/')) {
       controller = controller.substring(0, controller.length - 1);
     }
-    const response = await fetch(`${controller}/init`);
-    const config = (await response.json()) as { node: string; sender: string };
+    const res = await fetch(`${controller}/init`);
+    const config = (await res.json()) as { node?: string; sender?: string };
+    if (!config.node || !config.sender) {
+      log.info('No data provided, stopping');
+      return;
+    }
 
     const url = config.node;
     const feePayerKey = config.sender;
@@ -270,10 +269,18 @@ program
 
     const account = await fetchAcc(sender.toPublicKey(), url);
     let nonce = parseInt(account.nonce.toString());
+    let i = 0;
+    let has_work = true;
     // let receiver = PublicKey.fromBase58(config.receiver);
-    for (let i = 0; i < parseInt(opts.count); i++) {
+    while (has_work) {
+      const res = await fetch(`${controller}/work`, { method: 'head' });
+      has_work = res.headers.get('X-Has-Work') === 'true';
+      if (!has_work) {
+        log.info('No more work. Stopping');
+        break;
+      }
       let txSent = await zkapp.call(sender, nonce++);
-      log.info(`transaction #${i} sent: ${txSent.hash()}`);
+      log.info(`transaction #${i++} sent: ${txSent.hash()}`);
     }
   });
 
