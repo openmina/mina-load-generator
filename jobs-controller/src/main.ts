@@ -51,13 +51,13 @@ program
         app.get('/ready/:publicKey', (req: Request<{publicKey: String}>, res: Response) => {
             const id = req.params.publicKey;
             ready_jobs.add(id);
-            const ready = ready_jobs.size >= (jobs || init_jobs);
-            if (ready) {
+            all_ready = ready_jobs.size >= (jobs || init_jobs);
+            if (all_ready) {
                 log.info(`Releasing job for ${id}`);
             } else {
                 log.info(`Pausing job for ${id} as only ${ready_jobs.size} jobs are ready out of ${(jobs || init_jobs)}...`);
             }
-            res.set('X-All-Ready', `${ready}`).sendStatus(200);
+            res.set('X-All-Ready', `${all_ready}`).sendStatus(200);
         });
         if (work !== undefined) {
             app.get('/work', (_req: Request, res: Response) => {
