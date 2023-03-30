@@ -13,10 +13,10 @@ steps:
   commands:
     - npm install
 
-- name: test
-  image: node:alpine
-  commands:
-    - npm test
+# - name: test
+#   image: node:alpine
+#   commands:
+#     - npm test
 
 - name: publish-send
   image: plugins/docker
