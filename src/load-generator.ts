@@ -145,88 +145,93 @@ export class LoadGenerator {
   }
 }
 
-let controller: Controller | undefined;
-let localConfig: any | undefined = undefined;
-
-let job = new Command()
+export let jobCommand = new Command()
   .name('job')
   .argument('<server>', 'remote controller URL')
-  .action((server) => {
+  .action(async (server) => {
     const log = new Logger();
     log.info(`using controller ${server}`);
-    controller = new RemoteControllerClient(server, log);
+    const controller = new RemoteControllerClient(server, log);
+    await run(controller);
   });
 
-let local = new Command()
+class LocalController {
+  account: string;
+  graphql: string;
+  name: string;
+  count: number;
+  data: any;
+
+  constructor(
+    account: string,
+    graphql: string,
+    name: string,
+    count: number,
+    data: any
+  ) {
+    this.account = account;
+    this.graphql = graphql;
+    this.name = name;
+    this.count = count;
+    this.data = data;
+  }
+
+  getJobConfiguration(): Promise<any> {
+    return Promise.resolve({
+      account: this.account,
+      graphql: this.graphql,
+      name: this.name,
+      data: this.data,
+    });
+  }
+  notifyReadyAndWaitForOthers(_key: any): Promise<void> {
+    return Promise.resolve();
+  }
+  getMoreWork(): Promise<any> {
+    if (this.count-- <= 0) {
+      return Promise.resolve(undefined);
+    } else {
+      return Promise.resolve({});
+    }
+  }
+}
+
+export let localCommand = new Command()
   .name('local')
   .requiredOption('-u, --url <graphql>', 'GraphQL address of a Mina node')
   .requiredOption(
     '-k, --key <private-key>',
     'private key of the account that performs transfers'
   )
-  .option('-c, --count <number>', 'count of transactions', myParseInt, 1)
-  .hook('postAction', (cmd, sub) => {
-    const opts = cmd.opts();
-    const data = localConfig;
-    class C implements Controller {
-      getJobConfiguration(): Promise<any> {
-        return Promise.resolve({
-          account: opts.key,
-          graphql: opts.url,
-          name: sub.name(),
-          data,
-        });
-      }
-      notifyReadyAndWaitForOthers(_key: any): Promise<void> {
-        return Promise.resolve();
-      }
-      getMoreWork(): Promise<any> {
-        if (opts.count-- <= 0) {
-          return Promise.resolve(undefined);
-        } else {
-          return Promise.resolve({});
-        }
-      }
-    }
-    controller = new C();
-  });
+  .option('-c, --count <number>', 'count of transactions', myParseInt, 1);
 
 for (let { name, desc } of LoadRegistry.getAll()) {
   let command = desc.getCommand();
-  command.name(name).action((opts: any) => {
-    localConfig = opts;
+  command.name(name).action(async (opts: any, cmd) => {
+    let { key, url, count }: { key: string; url: string; count: number } =
+      cmd.optsWithGlobals();
+    let data = opts;
+    const controller = new LocalController(key, url, cmd.name(), count, data);
+    await run(controller);
   });
-  local.addCommand(command);
+  localCommand.addCommand(command);
 }
 
-const program = new Command()
-  .option(
-    '-v, --verbose',
-    'make more logging',
-    (_, prev) => (prev > 0 ? prev - 1 : prev),
-    3
-  )
-  .addCommand(job)
-  .addCommand(local);
+async function run(controller: Controller) {
+  await isReady;
+  const config = (await controller.getJobConfiguration()) as any;
 
-await isReady;
-program.parse(process.argv);
-if (controller === undefined) {
-  process.exit(1);
+  const { account: acc, graphql, name, data } = config;
+  const account = PrivateKey.fromBase58(acc);
+  const generator = new LoadGenerator(
+    controller,
+    account,
+    graphql,
+    name,
+    data,
+    new Logger()
+  );
+  await generator.run();
+
+  await shutdown();
 }
-const log = new Logger({ minLevel: program.opts().verbose as number });
-
-const config = (await controller.getJobConfiguration()) as any;
-const { account: acc, graphql, name, data } = config;
-const account = PrivateKey.fromBase58(acc);
-const generator = new LoadGenerator(
-  controller,
-  account,
-  graphql,
-  name,
-  data,
-  log
-);
-await generator.run();
-
-await shutdown();

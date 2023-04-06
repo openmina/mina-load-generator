@@ -18,26 +18,12 @@ steps:
 #   commands:
 #     - npm test
 
-- name: publish-send
+- name: publish
   image: plugins/docker
   settings:
     password:
       from_secret: local_docker_hub_password
-    repo: akoptelov/mina-sample-zkapp
-    tags:
-    - ${DRONE_COMMIT_SHA:0:8}
-    - latest
-    username:
-      from_secret: local_docker_hub_username
-
-- name: publish-jobs-controller
-  image: plugins/docker
-  settings:
-    context: jobs-controller
-    dockerfile: jobs-controller/Dockerfile
-    password:
-      from_secret: local_docker_hub_password
-    repo: akoptelov/mina-sample-zkapp-controller
+    repo: akoptelov/mina-load-generator
     tags:
     - ${DRONE_COMMIT_SHA:0:8}
     - latest

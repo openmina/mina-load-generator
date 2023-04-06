@@ -133,9 +133,10 @@ export class ControllerServer {
   }
 }
 
-let program = new Command();
+export const command = new Command();
 
-program
+command
+  .name('controller')
   .option('-p, --port <number>', 'port to listen at', myParseInt, 3000)
   .requiredOption(
     '-c, --config <file>',
@@ -153,5 +154,3 @@ program
         log.info(`⚡️[server]: Server is running at http://localhost:${port}`)
       );
   });
-
-await program.parseAsync(process.argv);
