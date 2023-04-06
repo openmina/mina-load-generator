@@ -16,27 +16,15 @@ class MultiAccTrans implements LoadDescriptor {
   zk: MultiAcc;
   recepients: PublicKey[];
   log: Logger<any>;
-  a1: PrivateKey;
-  a2: PrivateKey;
+  a1: PublicKey;
+  a2: PublicKey;
 
   constructor() {
-    this.log = new Logger({ name: 'mat' });
+    this.log = new Logger({ name: 'matp' });
   }
 
   getCommand() {
-    return new Command()
-      .option(
-        '-n, --accounts-number <number>',
-        'number of accounts to transfer to',
-        myParseInt,
-        1
-      )
-      .option(
-        '-a, --amount <mina>',
-        'amount, in mina, to send',
-        myParseInt,
-        10
-      );
+    return new Command();
   }
 
   async initialize(account: PrivateKey) {
@@ -48,8 +36,15 @@ class MultiAccTrans implements LoadDescriptor {
     this.log.info(`public key: ${this.account.toPublicKey().toBase58()}`);
     this.log.debug(`private key: ${this.account.toBase58()}`);
 
-    this.a1 = PrivateKey.random();
-    this.a2 = PrivateKey.random();
+    // this.a1 = PrivateKey.random().toPublicKey();
+    // this.a2 = PrivateKey.random().toPublicKey();
+    this.a1 = PublicKey.fromBase58(
+      'B62qp8iy2kUcn7hJgEaDPdrRXE4KQ59vz6shpUT4cmrhhKUDvvrkKZL'
+    );
+    this.a2 = PublicKey.fromBase58(
+      'B62qpPita1s7Dbnr7MVb3UK8fdssZixL1a4536aeMYxbTJEtRGGyS8U'
+    );
+
     this.log.debug('compiling zkApp...');
     await MultiAcc.compile();
     this.log.debug('done');
@@ -64,14 +59,8 @@ class MultiAccTrans implements LoadDescriptor {
         let update = AccountUpdate.fundNewAccount(account.toPublicKey());
         update.send({ to: this.account.toPublicKey(), amount: 100e9 });
         this.zk.deploy();
-        AccountUpdate.fundNewAccount(account.toPublicKey()).send({
-          to: this.a1.toPublicKey(),
-          amount: 100e9,
-        });
-        AccountUpdate.fundNewAccount(account.toPublicKey()).send({
-          to: this.a2.toPublicKey(),
-          amount: 100e9,
-        });
+        //AccountUpdate.fundNewAccount(account.toPublicKey()).send({to: this.a1, amount: 100e9});
+        //AccountUpdate.fundNewAccount(account.toPublicKey()).send({to: this.a2, amount: 100e9});
       }
     );
 
@@ -88,18 +77,19 @@ class MultiAccTrans implements LoadDescriptor {
 
     this.log.debug('waiting for account to be founded...');
     await sentTx.wait();
-    //await Mina.waitForFunding(this.account.toPublicKey().toBase58());
     this.log.info('zkapp is ready and deployed');
   }
 
   transactionBody(_: any) {
     return () => {
       this.zk.deposit(UInt64.from(100e9));
-      this.zk.transfer(UInt64.from(10e9), this.a1.toPublicKey());
-      //AccountUpdate.createSigned(this.signer.toPublicKey());
-      this.zk.transfer(UInt64.from(10e9), this.a2.toPublicKey());
+      this.zk.transfer(UInt64.from(10e9), this.a1);
+      AccountUpdate.createSigned(this.signer.toPublicKey()).send({
+        to: this.a2,
+        amount: UInt64.from(10e9),
+      });
     };
   }
 }
 
-LoadRegistry.register('multi-account-transfer', new MultiAccTrans());
+LoadRegistry.register('multi-account-proofs-sigs', new MultiAccTrans());

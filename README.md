@@ -1,4 +1,4 @@
-# Sample Mina zkapp transaction generator
+# Mina zkapp transactions generator
 
 ## Building
 
@@ -9,9 +9,27 @@ $ npm run build
 
 ## Sending a Transaction
 
+### Account Update with Proofs
+
 ``` sh
-$ npm run call -- --url http://1.k8.openmina.com:31311/node1/graphql --fee-payer-key EKE5WXywUNqyPoNpU8D9682z6fxcnUdDMQaQN4x6K1wmC8sYXWa1
+$ node build/src/main.js local --url http://1.k8.openmina.com:31355/node1/graphql --key EKE5WXywUNqyPoNpU8D9682z6fxcnUdDMQaQN4x6K1wmC8sYXWa1 multi-account-proofs
 ```
+
+[Account update zkApp code](src/MultiAcc.ts)
+
+[Transaction body](src/multi-account-proofs.ts#L85-L87)
+
+
+
+### Account Update with Proofs and Signatures
+
+``` sh
+$ node build/src/main.js local --url http://1.k8.openmina.com:31355/node1/graphql --key EKE5WXywUNqyPoNpU8D9682z6fxcnUdDMQaQN4x6K1wmC8sYXWa1 multi-account-proofs-sigs
+```
+
+[Account update zkApp code](src/MultiAcc.ts)
+
+[Transaction body](src/multi-account-proofs-sigs.ts#L85-L90)
 
 ## Sending Many Transactions in A Cluster
 

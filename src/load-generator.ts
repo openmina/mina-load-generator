@@ -7,6 +7,7 @@ import {
   PrivateKey,
   PublicKey,
   shutdown,
+  UInt64,
 } from 'snarkyjs';
 import { Account } from 'snarkyjs/dist/node/lib/mina/account.js';
 import { Logger } from 'tslog';
@@ -15,7 +16,10 @@ import { Controller } from './controller.js';
 import { LoadRegistry } from './load-registry.js';
 import { myParseInt } from './parse-int.js';
 import './multi-account-transfer.js';
+import './multi-account-proofs.js';
+import './multi-account-proofs-sigs.js';
 import './simple-state-update.js';
+import { LocalBlockchain } from 'snarkyjs/dist/node/lib/mina.js';
 
 export interface Load {
   prepare(): Promise<void>;
@@ -50,6 +54,9 @@ export class LoadGenerator {
 
   async run() {
     this.log.debug(`activating Mina connection to ${this.url}...`);
+    //let local = Mina.LocalBlockchain();
+    //Mina.setActiveInstance(local);
+    //this.account = local.testAccounts[0].privateKey;
     Mina.setActiveInstance(Mina.Network(this.url));
 
     this.log.debug('initializing...');
@@ -79,19 +86,20 @@ export class LoadGenerator {
   }
 
   async fetchAccount() {
-    const result = await fetchAccount(
-      { publicKey: this.publicKey() },
-      this.url
-    );
-    if (result.account) {
-      this.log.trace('account fetched: ', result.account);
-      this.accountData = result.account;
-      this.nonce = parseInt(this.accountData.nonce.toString());
-      return true;
-    } else {
-      this.log.error('error fetching account:', result.error);
-      return false;
-    }
+    // const result = await fetchAccount(
+    //   { publicKey: this.publicKey() },
+    //   this.url
+    // );
+    // if (result.account) {
+    //   //this.log.trace('account fetched: ', result.account);
+    //   this.accountData = result.account;
+    //   this.nonce = parseInt(this.accountData.nonce.toString());
+    //   return true;
+    // } else {
+    //   this.log.error('error fetching account:', result.error);
+    //   return false;
+    // }
+    return true;
   }
 
   async getMoreWork(): Promise<void> {
@@ -101,9 +109,10 @@ export class LoadGenerator {
   async doWork(_work: any): Promise<void> {
     this.log.silly('preparing transaction...');
     let load = LoadRegistry.get(this.name);
+    console.log(this.data);
     let body = load.transactionBody(this.data);
     let tx = await Mina.transaction(
-      { fee: 1e9, sender: this.publicKey(), nonce: this.nonce++ },
+      { fee: UInt64.from(100e9), sender: this.publicKey() },
       body
     );
     //this.log.silly('transaction:', tx);
@@ -222,6 +231,7 @@ async function run(controller: Controller) {
   const config = (await controller.getJobConfiguration()) as any;
 
   const { account: acc, graphql, name, data } = config;
+  console.log(config);
   const account = PrivateKey.fromBase58(acc);
   const generator = new LoadGenerator(
     controller,
