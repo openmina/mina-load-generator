@@ -11,7 +11,7 @@ import {
 } from 'snarkyjs';
 import { Account } from 'snarkyjs/dist/node/lib/mina/account.js';
 import { Logger } from 'tslog';
-import { RemoteControllerClient } from './controller.js';
+import { LocalController, RemoteControllerClient } from './controller.js';
 import { Controller } from './controller.js';
 import { LoadDescriptor, LoadRegistry } from './load-registry.js';
 import { myParseInt } from './parse-int.js';
@@ -37,23 +37,22 @@ export class LoadGenerator {
   load: LoadDescriptor;
   log: Logger<any>;
 
-  constructor(
-    controller: Controller,
-    account: PrivateKey,
-    url: string,
-    name: string,
-    load: LoadDescriptor,
-    log: Logger<any>
-  ) {
-    this.controller = controller;
-    this.account = account;
-    this.url = url;
-    this.name = name;
-    this.load = load;
-    this.log = log.getSubLogger({ name: 'load-gen' });
+  constructor() {
+    this.log = LOG.getSubLogger({ name: 'load-gen' });
   }
 
-  async run() {
+  async run(controller: Controller) {
+    this.controller = controller;
+    // let data: any;
+
+    const config = await controller.getJobConfiguration();
+    if (config === undefined) {
+      this.log.warn('no configuration is return, stopping');
+      return;
+    }
+    ({ account: this.account, graphql: this.url, name: this.name } = config);
+    this.load = LoadRegistry.load(this.name);
+
     this.log.debug(`activating Mina connection to ${this.url}...`);
     //let local = Mina.LocalBlockchain();
     //Mina.setActiveInstance(local);
@@ -72,12 +71,12 @@ export class LoadGenerator {
     if (!(await this.fetchAccount())) {
       return;
     }
-    this.log.debug(`account is ${this.accountData}`);
+    this.log.debug('account is fetched');
+    this.log.silly(`account is ${this.accountData}`);
 
-    let work;
-    while ((work = await this.getMoreWork()) !== undefined) {
-      this.log.debug('work received: ${work}');
-      await this.doWork(work);
+    while (await this.hasMoreWork()) {
+      this.log.debug('has more work');
+      await this.doWork();
     }
     this.log.debug('no more work');
   }
@@ -87,27 +86,27 @@ export class LoadGenerator {
   }
 
   async fetchAccount() {
-    // const result = await fetchAccount(
-    //   { publicKey: this.publicKey() },
-    //   this.url
-    // );
-    // if (result.account) {
-    //   //this.log.trace('account fetched: ', result.account);
-    //   this.accountData = result.account;
-    //   this.nonce = parseInt(this.accountData.nonce.toString());
-    //   return true;
-    // } else {
-    //   this.log.error('error fetching account:', result.error);
-    //   return false;
-    // }
-    return true;
+    const result = await fetchAccount(
+      { publicKey: this.publicKey() },
+      this.url
+    );
+    if (result.account) {
+      //this.log.trace('account fetched: ', result.account);
+      this.accountData = result.account;
+      this.nonce = parseInt(this.accountData.nonce.toString());
+      return true;
+    } else {
+      this.log.error('error fetching account:', result.error);
+      return false;
+    }
+    //return true;
   }
 
-  async getMoreWork(): Promise<void> {
-    return this.controller.getMoreWork();
+  async hasMoreWork(): Promise<boolean> {
+    return this.controller.hasMoreWork();
   }
 
-  async doWork(_work: any): Promise<void> {
+  async doWork(): Promise<void> {
     this.log.silly('preparing transaction...');
     let body = this.load.transactionBody();
     let tx = await Mina.transaction(
@@ -166,47 +165,6 @@ export let jobCommand = new Command()
     await run(controller);
   });
 
-class LocalController {
-  account: string;
-  graphql: string;
-  name: string;
-  count: number;
-  data: any;
-
-  constructor(
-    account: string,
-    graphql: string,
-    name: string,
-    count: number,
-    data: any
-  ) {
-    this.account = account;
-    this.graphql = graphql;
-    this.name = name;
-    this.count = count;
-    this.data = data;
-  }
-
-  getJobConfiguration(): Promise<any> {
-    return Promise.resolve({
-      account: this.account,
-      graphql: this.graphql,
-      name: this.name,
-      data: this.data,
-    });
-  }
-  notifyReadyAndWaitForOthers(_key: any): Promise<void> {
-    return Promise.resolve();
-  }
-  getMoreWork(): Promise<any> {
-    if (this.count-- <= 0) {
-      return Promise.resolve(undefined);
-    } else {
-      return Promise.resolve({});
-    }
-  }
-}
-
 export let localCommand = new Command()
   .name('local')
   .requiredOption('-u, --url <graphql>', 'GraphQL address of a Mina node')
@@ -228,20 +186,7 @@ for (let command of LoadRegistry.commands()) {
 
 async function run(controller: Controller) {
   await isReady;
-  const config = (await controller.getJobConfiguration()) as any;
-
-  const { account: acc, graphql, name, data } = config;
-  let load = LoadRegistry.load(name);
-  const account = PrivateKey.fromBase58(acc);
-  const generator = new LoadGenerator(
-    controller,
-    account,
-    graphql,
-    name,
-    load,
-    LOG
-  );
-  await generator.run();
-
+  const generator = new LoadGenerator();
+  await generator.run(controller);
   await shutdown();
 }

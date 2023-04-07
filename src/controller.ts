@@ -1,13 +1,60 @@
 import { Logger } from 'tslog';
 import fetch from 'node-fetch';
 import { setTimeout } from 'timers/promises';
+import { PrivateKey } from 'snarkyjs';
+
+interface JobConfiguration {
+  account: PrivateKey;
+  graphql: string;
+  name: string;
+  data?: any;
+}
 
 export interface Controller {
-  getJobConfiguration(): Promise<any>;
+  getJobConfiguration(): Promise<JobConfiguration | undefined>;
 
   notifyReadyAndWaitForOthers(key: any): Promise<void>;
 
-  getMoreWork(): Promise<any>;
+  hasMoreWork(): Promise<boolean>;
+}
+
+export class LocalController {
+  account: string;
+  graphql: string;
+  name: string;
+  data?: any;
+  count: number;
+
+  constructor(
+    account: string,
+    graphql: string,
+    name: string,
+    count: number,
+    data: any
+  ) {
+    this.account = account;
+    this.graphql = graphql;
+    this.name = name;
+    this.data = data;
+    this.count = count;
+  }
+
+  getJobConfiguration(): Promise<JobConfiguration | undefined> {
+    return Promise.resolve({
+      account: PrivateKey.fromBase58(this.account),
+      graphql: this.graphql,
+      name: this.name,
+      data: this.data,
+    });
+  }
+
+  notifyReadyAndWaitForOthers(_key: any): Promise<void> {
+    return Promise.resolve();
+  }
+
+  hasMoreWork(): Promise<boolean> {
+    return Promise.resolve(this.count-- > 0);
+  }
 }
 
 export class RemoteControllerClient implements Controller {
@@ -27,9 +74,12 @@ export class RemoteControllerClient implements Controller {
     return data;
   }
 
-  async getJobConfiguration(): Promise<any> {
+  async getJobConfiguration(): Promise<JobConfiguration | undefined> {
     let { config } = await this.fetch<any>('/init');
-    this.job = config?.name;
+    if (config !== undefined) {
+      this.job = config?.name;
+      config.account = PrivateKey.fromBase58(config.account);
+    }
     return config;
   }
 
@@ -46,10 +96,8 @@ export class RemoteControllerClient implements Controller {
     this.log.debug('other jobs are ready too');
   }
 
-  async getMoreWork<W>(): Promise<W | undefined> {
-    let { data } = await this.fetch<{ data?: any }>(this.workUrl());
-    this.log.trace('work fetched: ', data);
-    return data;
+  async hasMoreWork(): Promise<boolean> {
+    return this.fetch(this.workUrl());
   }
 
   waitUrl(): string {

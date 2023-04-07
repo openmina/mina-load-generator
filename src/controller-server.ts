@@ -117,10 +117,10 @@ export class ControllerServer {
       if (job.count > 0) {
         job.count--;
         this.log.info(`Providing work for ${name}, ${job.count} work left`);
-        res.json({ data: job.data });
+        res.json(true);
       } else {
         this.log.info('No work left');
-        res.json({});
+        res.json(false);
       }
     };
   }
