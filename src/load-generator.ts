@@ -175,7 +175,7 @@ export class LoadGenerator {
 
 export let jobCommand = new Command()
   .name('job')
-  .argument('<server>', 'remote controller URL')
+  .argument('[server]', 'remote controller URL', 'http://localhost:3000')
   .action(async (server) => {
     const log = LOG;
     log.info(`using controller ${server}`);

@@ -12,12 +12,6 @@ interface JobConfiguration {
   data: any;
 }
 
-interface ServerConfiguration {
-  jobs: JobConfiguration[];
-  nodes: string[];
-  accounts: string[];
-}
-
 interface JobRuntimeConfig {
   workers: number;
   count: number;
@@ -35,18 +29,23 @@ export class ControllerServer {
   initWorkers: number;
   allWorkersReady: boolean;
 
-  constructor(serverConfig: ServerConfiguration, log: Logger<any>) {
+  constructor(
+    accounts: string[],
+    nodes: string[],
+    config: JobConfiguration[],
+    log: Logger<any>
+  ) {
     this.jobs = new Map(
-      serverConfig.jobs.map((e) => [
+      config.map((e) => [
         e.name,
         { workers: e.workers, count: e.count, data: e.data },
       ])
     );
-    this.nodes = serverConfig.nodes;
-    this.accounts = serverConfig.accounts;
+    this.nodes = nodes;
+    this.accounts = accounts;
     this.log = log.getSubLogger({ name: 'controller' });
 
-    this.totalWorkers = serverConfig.jobs.reduce((a, v) => a + v.workers, 0);
+    this.totalWorkers = config.reduce((a, v) => a + v.workers, 0);
     this.initWorkers = 0;
     this.allWorkersReady = false;
   }
@@ -139,19 +138,40 @@ export const command = new Command();
 command
   .name('controller')
   .option('-p, --port <number>', 'port to listen at', myParseInt, 3000)
-  .requiredOption(
-    '-c, --config <file>',
-    'configuration of the network, list of graphql endpoints and accounts'
+  .option(
+    '-a, --accounts-file <file>',
+    'file with private keys',
+    'accounts.txt'
   )
-  .action(async ({ port, config }: { port: number; config: string }) => {
-    let log = LOG;
-    const configJson = JSON.parse(
-      (await readFile(config)).toString()
-    ) as ServerConfiguration;
-    let controller = new ControllerServer(configJson, log);
-    controller
-      .createApp()
-      .listen(port, () =>
-        log.info(`⚡️[server]: Server is running at http://localhost:${port}`)
-      );
-  });
+  .option('-n, --nodes-file <file>', 'file with GraphQL nodes', 'nodes.txt')
+  .option(
+    '-c, --config-file <file>',
+    'configuration of the network, list of graphql endpoints and accounts',
+    'config.json'
+  )
+  .action(
+    async ({
+      port,
+      accountsFile,
+      nodesFile,
+      configFile,
+    }: {
+      port: number;
+      accountsFile: string;
+      nodesFile: string;
+      configFile: string;
+    }) => {
+      let log = LOG;
+      const accounts = (await readFile(accountsFile)).toString().split('\n');
+      const nodes = (await readFile(nodesFile)).toString().split('\n');
+      const config = JSON.parse(
+        (await readFile(configFile)).toString()
+      ) as JobConfiguration[];
+      let controller = new ControllerServer(accounts, nodes, config, log);
+      controller
+        .createApp()
+        .listen(port, () =>
+          log.info(`⚡️[server]: Server is running at http://localhost:${port}`)
+        );
+    }
+  );
