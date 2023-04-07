@@ -1,7 +1,9 @@
 import { Command } from '@commander-js/extra-typings';
-import { command as serverCommand } from './controller-server.js';
-import { jobCommand, localCommand } from './load-generator.js';
 import { LOG } from './log.js';
+import './multi-account-updates.js';
+import './simple-state-update.js';
+import { jobCommand, localCommand } from './load-generator.js';
+import { command as serverCommand } from './controller-server.js';
 
 await new Command()
   .option(

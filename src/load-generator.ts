@@ -15,12 +15,9 @@ import { LocalController, RemoteControllerClient } from './controller.js';
 import { Controller } from './controller.js';
 import { LoadDescriptor, LoadRegistry } from './load-registry.js';
 import { myParseInt } from './parse-int.js';
-import './multi-account-transfer.js';
-import './multi-account-proofs.js';
-import './multi-account-proofs-sigs.js';
-import './simple-state-update.js';
-import { LocalBlockchain } from 'snarkyjs/dist/node/lib/mina.js';
 import { LOG } from './log.js';
+import { writeFile } from 'fs/promises';
+import { TransactionId } from 'snarkyjs/dist/node/lib/mina.js';
 
 export interface Load {
   prepare(): Promise<void>;
@@ -36,6 +33,7 @@ export class LoadGenerator {
   name: string;
   load: LoadDescriptor;
   log: Logger<any>;
+  txs: TransactionId[];
 
   constructor() {
     this.log = LOG.getSubLogger({ name: 'load-gen' });
@@ -74,11 +72,23 @@ export class LoadGenerator {
     this.log.debug('account is fetched');
     this.log.silly(`account is ${this.accountData}`);
 
+    this.txs = [];
+
     while (await this.hasMoreWork()) {
       this.log.debug('has more work');
       await this.doWork();
     }
     this.log.debug('no more work');
+
+    this.log.info(
+      `waiting for ${this.txs.length} transactions to be in the chain...`
+    );
+    await Promise.all(
+      this.txs.map((txId) =>
+        txId.wait().then(() => this.log.debug(`${txId.hash()} included`))
+      )
+    );
+    this.log.info('all transactions are included');
   }
 
   async initialize(): Promise<void> {
@@ -110,7 +120,11 @@ export class LoadGenerator {
     this.log.silly('preparing transaction...');
     let body = this.load.transactionBody();
     let tx = await Mina.transaction(
-      { fee: UInt64.from(100e9), sender: this.publicKey() },
+      {
+        fee: UInt64.from(100e9),
+        sender: this.publicKey(),
+        nonce: this.nonce++,
+      },
       body
     );
     //this.log.silly('transaction:', tx);
@@ -121,13 +135,17 @@ export class LoadGenerator {
       this.log.silly('proof is generated');
 
       this.log.silly('signing and sending the transaction...');
-      let sentTx = await tx.sign([this.privateKey()]).send();
+      tx.sign([this.privateKey()]);
+      // await writeFile("transaction.json", tx.toJSON());
+      // await writeFile("transaction.graphql", tx.toGraphqlQuery());
+      let sentTx = await tx.send();
       //this.log.silly('sentTx', sentTx);
       if (sentTx.isSuccess) {
         this.log.info('tx hash:', sentTx.hash());
-        this.log.info('waiting for it to be in block...');
-        await sentTx.wait();
-        this.log.info('transaction is in block');
+        this.txs.push(sentTx);
+        // this.log.info('waiting for it to be in block...');
+        // await sentTx.wait();
+        // this.log.info('transaction is in block');
       } else {
         for (let error of (sentTx as any).errors) {
           this.log.error('error sending transaction:', error);
