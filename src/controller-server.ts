@@ -3,6 +3,7 @@ import { Logger } from 'tslog';
 import { Command } from '@commander-js/extra-typings';
 import { readFile } from 'fs/promises';
 import { myParseInt } from './parse-int.js';
+import { LOG } from './log.js';
 
 interface JobConfiguration {
   name: string;
@@ -143,7 +144,7 @@ command
     'configuration of the network, list of graphql endpoints and accounts'
   )
   .action(async ({ port, config }: { port: number; config: string }) => {
-    let log = new Logger();
+    let log = LOG;
     const configJson = JSON.parse(
       (await readFile(config)).toString()
     ) as ServerConfiguration;

@@ -3,6 +3,7 @@ import { AccountUpdate, Mina, PrivateKey } from 'snarkyjs';
 import { Logger } from 'tslog';
 import { Add } from './Add.js';
 import { LoadDescriptor, LoadRegistry } from './load-registry.js';
+import { LOG } from './log.js';
 //import { ControllerConfiguration } from "./controller.js";
 
 export class SimpleStateUpdate implements LoadDescriptor {
@@ -11,7 +12,7 @@ export class SimpleStateUpdate implements LoadDescriptor {
   log: Logger<any>;
 
   constructor() {
-    this.log = new Logger({ name: 'ssu' });
+    this.log = LOG.getSubLogger({ name: 'ssu' });
   }
 
   getCommand() {
@@ -22,7 +23,7 @@ export class SimpleStateUpdate implements LoadDescriptor {
     await Add.compile();
   }
 
-  transactionBody(_: any) {
+  transactionBody() {
     return () => {
       this.zk.update();
     };
@@ -67,4 +68,4 @@ export class SimpleStateUpdate implements LoadDescriptor {
   }
 }
 
-LoadRegistry.register('simple-state-update', new SimpleStateUpdate());
+LoadRegistry.register('simple-state-update', SimpleStateUpdate);

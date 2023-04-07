@@ -13,13 +13,14 @@ import { Account } from 'snarkyjs/dist/node/lib/mina/account.js';
 import { Logger } from 'tslog';
 import { RemoteControllerClient } from './controller.js';
 import { Controller } from './controller.js';
-import { LoadRegistry } from './load-registry.js';
+import { LoadDescriptor, LoadRegistry } from './load-registry.js';
 import { myParseInt } from './parse-int.js';
 import './multi-account-transfer.js';
 import './multi-account-proofs.js';
 import './multi-account-proofs-sigs.js';
 import './simple-state-update.js';
 import { LocalBlockchain } from 'snarkyjs/dist/node/lib/mina.js';
+import { LOG } from './log.js';
 
 export interface Load {
   prepare(): Promise<void>;
@@ -33,7 +34,7 @@ export class LoadGenerator {
   nonce: number;
   url: string;
   name: string;
-  data: any;
+  load: LoadDescriptor;
   log: Logger<any>;
 
   constructor(
@@ -41,14 +42,14 @@ export class LoadGenerator {
     account: PrivateKey,
     url: string,
     name: string,
-    data: any,
+    load: LoadDescriptor,
     log: Logger<any>
   ) {
     this.controller = controller;
     this.account = account;
     this.url = url;
     this.name = name;
-    this.data = data;
+    this.load = load;
     this.log = log.getSubLogger({ name: 'load-gen' });
   }
 
@@ -82,7 +83,7 @@ export class LoadGenerator {
   }
 
   async initialize(): Promise<void> {
-    await LoadRegistry.get(this.name).initialize(this.account);
+    await this.load.initialize(this.account);
   }
 
   async fetchAccount() {
@@ -108,9 +109,7 @@ export class LoadGenerator {
 
   async doWork(_work: any): Promise<void> {
     this.log.silly('preparing transaction...');
-    let load = LoadRegistry.get(this.name);
-    console.log(this.data);
-    let body = load.transactionBody(this.data);
+    let body = this.load.transactionBody();
     let tx = await Mina.transaction(
       { fee: UInt64.from(100e9), sender: this.publicKey() },
       body
@@ -127,6 +126,9 @@ export class LoadGenerator {
       //this.log.silly('sentTx', sentTx);
       if (sentTx.isSuccess) {
         this.log.info('tx hash:', sentTx.hash());
+        this.log.info('waiting for it to be in block...');
+        await sentTx.wait();
+        this.log.info('transaction is in block');
       } else {
         for (let error of (sentTx as any).errors) {
           this.log.error('error sending transaction:', error);
@@ -158,7 +160,7 @@ export let jobCommand = new Command()
   .name('job')
   .argument('<server>', 'remote controller URL')
   .action(async (server) => {
-    const log = new Logger();
+    const log = LOG;
     log.info(`using controller ${server}`);
     const controller = new RemoteControllerClient(server, log);
     await run(controller);
@@ -214,13 +216,11 @@ export let localCommand = new Command()
   )
   .option('-c, --count <number>', 'count of transactions', myParseInt, 1);
 
-for (let { name, desc } of LoadRegistry.getAll()) {
-  let command = desc.getCommand();
-  command.name(name).action(async (opts: any, cmd) => {
+for (let command of LoadRegistry.commands()) {
+  command.action(async (opts: any, cmd) => {
     let { key, url, count }: { key: string; url: string; count: number } =
       cmd.optsWithGlobals();
-    let data = opts;
-    const controller = new LocalController(key, url, cmd.name(), count, data);
+    const controller = new LocalController(key, url, cmd.name(), count, opts);
     await run(controller);
   });
   localCommand.addCommand(command);
@@ -231,15 +231,15 @@ async function run(controller: Controller) {
   const config = (await controller.getJobConfiguration()) as any;
 
   const { account: acc, graphql, name, data } = config;
-  console.log(config);
+  let load = LoadRegistry.load(name);
   const account = PrivateKey.fromBase58(acc);
   const generator = new LoadGenerator(
     controller,
     account,
     graphql,
     name,
-    data,
-    new Logger()
+    load,
+    LOG
   );
   await generator.run();
 

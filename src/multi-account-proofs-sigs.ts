@@ -4,6 +4,7 @@ import { Logger } from 'tslog';
 import { LoadDescriptor, LoadRegistry } from './load-registry.js';
 import { MultiAcc } from './MultiAcc.js';
 import { myParseInt } from './parse-int.js';
+import { LOG } from './log.js';
 
 export interface Transfer {
   to: PublicKey;
@@ -20,7 +21,7 @@ class MultiAccTrans implements LoadDescriptor {
   a2: PublicKey;
 
   constructor() {
-    this.log = new Logger({ name: 'matp' });
+    this.log = LOG.getSubLogger({ name: 'matp' });
   }
 
   getCommand() {
@@ -36,14 +37,14 @@ class MultiAccTrans implements LoadDescriptor {
     this.log.info(`public key: ${this.account.toPublicKey().toBase58()}`);
     this.log.debug(`private key: ${this.account.toBase58()}`);
 
-    // this.a1 = PrivateKey.random().toPublicKey();
-    // this.a2 = PrivateKey.random().toPublicKey();
-    this.a1 = PublicKey.fromBase58(
-      'B62qp8iy2kUcn7hJgEaDPdrRXE4KQ59vz6shpUT4cmrhhKUDvvrkKZL'
-    );
-    this.a2 = PublicKey.fromBase58(
-      'B62qpPita1s7Dbnr7MVb3UK8fdssZixL1a4536aeMYxbTJEtRGGyS8U'
-    );
+    this.a1 = PrivateKey.random().toPublicKey();
+    this.a2 = PrivateKey.random().toPublicKey();
+    // this.a1 = PublicKey.fromBase58(
+    //   'B62qp8iy2kUcn7hJgEaDPdrRXE4KQ59vz6shpUT4cmrhhKUDvvrkKZL'
+    // );
+    // this.a2 = PublicKey.fromBase58(
+    //   'B62qpPita1s7Dbnr7MVb3UK8fdssZixL1a4536aeMYxbTJEtRGGyS8U'
+    // );
 
     this.log.debug('compiling zkApp...');
     await MultiAcc.compile();
@@ -80,7 +81,7 @@ class MultiAccTrans implements LoadDescriptor {
     this.log.info('zkapp is ready and deployed');
   }
 
-  transactionBody(_: any) {
+  transactionBody() {
     return () => {
       this.zk.deposit(UInt64.from(100e9));
       this.zk.transfer(UInt64.from(10e9), this.a1);
@@ -92,4 +93,4 @@ class MultiAccTrans implements LoadDescriptor {
   }
 }
 
-LoadRegistry.register('multi-account-proofs-sigs', new MultiAccTrans());
+LoadRegistry.register('multi-account-proofs-sigs', MultiAccTrans);

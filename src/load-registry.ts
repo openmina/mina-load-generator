@@ -2,31 +2,34 @@ import { Command } from '@commander-js/extra-typings';
 import { PrivateKey } from 'snarkyjs';
 
 export interface LoadDescriptor {
-  getCommand(): Command;
   initialize(account: PrivateKey): Promise<void>;
-  transactionBody(config: any): () => void;
+  transactionBody(): () => void;
 }
 
-let registry = new Map<string, LoadDescriptor>();
+type Ctor<A extends LoadDescriptor> = new () => A;
 
-function register(name: string, load: LoadDescriptor): void {
+let cmds: Command[] = [];
+let registry = new Map<string, Ctor<any>>();
+
+function register(name: string, load: Ctor<any>, command?: Command): void {
   registry.set(name, load);
+  cmds.push((command ?? new Command()).name(name));
 }
 
-function get(name: string): LoadDescriptor {
+function load(name: string): LoadDescriptor {
   const desc = registry.get(name);
   if (desc === undefined) {
     throw `unknown load ${name}`;
   }
-  return desc;
+  return new desc();
 }
 
-function getAll(): { name: string; desc: LoadDescriptor }[] {
-  return Array.from(registry, ([name, desc]) => ({ name, desc }));
+function commands(): Command[] {
+  return cmds;
 }
 
 export const LoadRegistry = {
   register,
-  get,
-  getAll,
+  load,
+  commands,
 };

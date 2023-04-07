@@ -2,6 +2,7 @@ import { Command } from '@commander-js/extra-typings';
 import { AccountUpdate, Mina, PrivateKey, PublicKey, UInt64 } from 'snarkyjs';
 import { Logger } from 'tslog';
 import { LoadDescriptor, LoadRegistry } from './load-registry.js';
+import { LOG } from './log.js';
 import { MultiAcc } from './MultiAcc.js';
 import { myParseInt } from './parse-int.js';
 
@@ -20,7 +21,7 @@ class MultiAccTrans implements LoadDescriptor {
   a2: PrivateKey;
 
   constructor() {
-    this.log = new Logger({ name: 'mat' });
+    this.log = LOG.getSubLogger({ name: 'mat' });
   }
 
   getCommand() {
@@ -92,7 +93,7 @@ class MultiAccTrans implements LoadDescriptor {
     this.log.info('zkapp is ready and deployed');
   }
 
-  transactionBody(_: any) {
+  transactionBody() {
     return () => {
       this.zk.deposit(UInt64.from(100e9));
       this.zk.transfer(UInt64.from(10e9), this.a1.toPublicKey());
@@ -102,4 +103,4 @@ class MultiAccTrans implements LoadDescriptor {
   }
 }
 
-LoadRegistry.register('multi-account-transfer', new MultiAccTrans());
+LoadRegistry.register('multi-account-transfer', MultiAccTrans);
