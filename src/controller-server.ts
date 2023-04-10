@@ -171,10 +171,21 @@ command
         (await readFile(configFile)).toString()
       ) as JobConfiguration[];
       let controller = new ControllerServer(accounts, nodes, config, log);
-      controller
+      let server = controller
         .createApp()
         .listen(port, () =>
           log.info(`⚡️[server]: Server is running at http://localhost:${port}`)
         );
+
+      function shutdown() {
+        log.info('shutting down...');
+        server.close(() => {
+          log.info('server closed');
+          process.exit(1);
+        });
+      }
+
+      process.on('SIGINT', shutdown);
+      process.on('SIGTERM', shutdown);
     }
   );
