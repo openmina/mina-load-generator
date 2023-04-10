@@ -124,6 +124,7 @@ export class ControllerServer {
     app.get('/init', this.init());
     app.get('/ready/:id', this.ready());
     app.get('/work/:job', this.moreWork());
+    app.get('/done/:id', this.done());
     return app;
   }
 }
