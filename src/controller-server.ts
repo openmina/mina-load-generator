@@ -138,6 +138,11 @@ export class ControllerServer {
 
 export const command = new Command();
 
+async function readLines(file: string): Promise<string[]> {
+  const lines = (await readFile(file)).toString().split('\n');
+  return lines.map((line) => line.trim()).filter((line) => line.length != 0);
+}
+
 command
   .name('controller')
   .option('-p, --port <number>', 'port to listen at', myParseInt, 3000)
@@ -165,8 +170,8 @@ command
       configFile: string;
     }) => {
       let log = LOG;
-      const accounts = (await readFile(accountsFile)).toString().split('\n');
-      const nodes = (await readFile(nodesFile)).toString().split('\n');
+      const accounts = await readLines(accountsFile);
+      const nodes = await readLines(nodesFile);
       const config = JSON.parse(
         (await readFile(configFile)).toString()
       ) as JobConfiguration[];
