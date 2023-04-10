@@ -65,6 +65,9 @@ export class ControllerServer {
         accountIndex >= this.accounts.length ||
         jobIndex >= jobs.length
       ) {
+        this.log.warn(
+          `not providing work, all ready = ${this.allWorkersReady}, account index = ${accountIndex}, job index = ${jobIndex}`
+        );
         res.json({});
         return;
       }
