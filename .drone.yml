@@ -3,7 +3,7 @@ kind: pipeline
 name: build-image
 type: docker
 trigger:
-  event: [ push ]
+  event: [ push, custom ]
   branch: [ main ]
 
 steps:
@@ -30,71 +30,3 @@ steps:
     username:
       from_secret: local_docker_hub_username
 
----
-kind: pipeline
-name: run-zkapps
-type: docker
-
-trigger:
-  event: [ custom ]
-
-environment:
-  RELEASE_NAME: zkapps-drone-${DRONE_BUILD_NUMBER}
-  SUFFIX: ${DRONE_BUILD_NUMBER}
-
-steps:
-
-- name: configure
-  image: alpine/k8s:1.26.1
-  environment:
-    DRONE_KUBECONFIG:
-      from_secret: local_kubeconfig
-    KUBECONFIG: kube-config
-  commands:
-  - umask 0077
-  - mkdir -p $HOME/.kube
-  - echo "$DRONE_KUBECONFIG" > kube-config
-  - kubectl config set-context --current --namespace $${NAMESPACE:-default}
-
-- name: start
-  image: alpine/k8s:1.26.1
-  environment:
-    KUBECONFIG: kube-config
-  commands:
-  - helm install $${RELEASE_NAME} . $${COUNT:+--set=transactionCount=$${COUNT}} $${PARALLELISM:+--set=parallelism=$${PARALLELISM}} --set=suffix=$${SUFFIX}
-
-- name: run
-  image: alpine/k8s:1.26.1
-  environment:
-    KUBECONFIG: kube-config
-  commands:
-  - |
-    for t in $(seq 10); do
-        kubectl logs jobs/send-zkapps-$${SUFFIX} --container=send --follow && exit
-        echo "Waiting for send container..."
-        sleep 5
-    done
-    echo "Failed to wait for send container"
-    exit 1
-
-- name: finish
-  image: alpine/k8s:1.26.1
-  environment:
-    KUBECONFIG: kube-config
-  commands:
-  - |
-    kubectl wait --for=jsonpath='{.status.conditions[*].status}'=True job/send-zkapps-$${SUFFIX} --timeout=180s
-    MSG=$$(kubectl get job/send-zkapps-$${SUFFIX} -o jsonpath='{.status.conditions[?(@.status=="True")].message}')
-    TYPE=$$(kubectl get job/send-zkapps-$${SUFFIX} -o jsonpath='{.status.conditions[?(@.status=="True")].type}')
-    if [ "$${TYPE}" != "Complete" ]; then echo "Error running job: $${MSG}"; exit 1; fi
-
-- name: clean-up
-  image: alpine/k8s:1.26.1
-  environment:
-    KUBECONFIG: kube-config
-  commands:
-  - helm delete $${RELEASE_NAME}
-  when:
-    status:
-    - success
-    - failure
