@@ -225,6 +225,27 @@ class ZkApp4AndSimple4 extends MultiAccWithZkApp implements LoadDescriptor {
 }
 LoadRegistry.register('zkapp4-simple4', ZkApp4AndSimple4);
 
+class ZkApp2 extends MultiAccWithZkApp implements LoadDescriptor {
+  transactionBody() {
+    return () => {
+      this.zk.deposit(UInt64.from(10e9));
+      this.zk.transfer(UInt64.from(10e9), this.a1);
+    };
+  }
+}
+LoadRegistry.register('zkapp2', ZkApp2);
+
+class ZkApp3 extends MultiAccWithZkApp implements LoadDescriptor {
+  transactionBody() {
+    return () => {
+      this.zk.deposit(UInt64.from(20e9));
+      this.zk.transfer(UInt64.from(10e9), this.a1);
+      this.zk.transfer(UInt64.from(10e9), this.a2);
+    };
+  }
+}
+LoadRegistry.register('zkapp3', ZkApp3);
+
 class ZkApp4 extends MultiAccWithZkApp implements LoadDescriptor {
   transactionBody() {
     return () => {
