@@ -89,6 +89,46 @@ abstract class MultiAccWithZkApp extends MultiAccTrans {
   }
 }
 
+class Simple2 extends MultiAccTrans implements LoadDescriptor {
+  transactionBody() {
+    return () => {
+      AccountUpdate.createSigned(this.sender.toPublicKey()).send({
+        to: this.a1,
+        amount: UInt64.from(10e9),
+      });
+      AccountUpdate.createSigned(this.sender.toPublicKey()).send({
+        to: this.a2,
+        amount: UInt64.from(10e9),
+      });
+    };
+  }
+}
+LoadRegistry.register('simple2', Simple2);
+
+class Simple4 extends MultiAccTrans implements LoadDescriptor {
+  transactionBody() {
+    return () => {
+      AccountUpdate.createSigned(this.sender.toPublicKey()).send({
+        to: this.a1,
+        amount: UInt64.from(10e9),
+      });
+      AccountUpdate.createSigned(this.sender.toPublicKey()).send({
+        to: this.a2,
+        amount: UInt64.from(10e9),
+      });
+      AccountUpdate.createSigned(this.sender.toPublicKey()).send({
+        to: this.a3,
+        amount: UInt64.from(10e9),
+      });
+      AccountUpdate.createSigned(this.sender.toPublicKey()).send({
+        to: this.a4,
+        amount: UInt64.from(10e9),
+      });
+    };
+  }
+}
+LoadRegistry.register('simple4', Simple4);
+
 class Simple8 extends MultiAccTrans implements LoadDescriptor {
   transactionBody() {
     return () => {
@@ -127,7 +167,6 @@ class Simple8 extends MultiAccTrans implements LoadDescriptor {
     };
   }
 }
-
 LoadRegistry.register('simple8', Simple8);
 
 class Simple4AndZkApp4 extends MultiAccWithZkApp implements LoadDescriptor {
@@ -156,7 +195,6 @@ class Simple4AndZkApp4 extends MultiAccWithZkApp implements LoadDescriptor {
     };
   }
 }
-
 LoadRegistry.register('simple4-zkapp4', Simple4AndZkApp4);
 
 class ZkApp4AndSimple4 extends MultiAccWithZkApp implements LoadDescriptor {
@@ -185,7 +223,6 @@ class ZkApp4AndSimple4 extends MultiAccWithZkApp implements LoadDescriptor {
     };
   }
 }
-
 LoadRegistry.register('zkapp4-simple4', ZkApp4AndSimple4);
 
 class ZkApp4 extends MultiAccWithZkApp implements LoadDescriptor {
@@ -198,7 +235,6 @@ class ZkApp4 extends MultiAccWithZkApp implements LoadDescriptor {
     };
   }
 }
-
 LoadRegistry.register('zkapp4', ZkApp4);
 
 class ZkApp8 extends MultiAccWithZkApp implements LoadDescriptor {
