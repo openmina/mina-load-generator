@@ -63,10 +63,18 @@ export class ControllerServer {
       workers: c.workers,
       data: c.data,
     }));
+    let jobData = new Map();
     let jobIndex = 0;
     let accountIndex = 0;
     let nodesIndex = 0;
-    return (_req: Request, res: Response) => {
+    return (req: Request, res: Response) => {
+      let existingJob = jobData.get(req.ip);
+      if (existingJob !== undefined) {
+        this.log.info(`Reinitializing worker for ${existingJob.name}`);
+        res.status(200).json({ existingJob });
+        return;
+      }
+
       if (
         this.allWorkersReady ||
         accountIndex >= this.accounts.length ||
@@ -91,6 +99,7 @@ export class ControllerServer {
         data: job.data,
       };
       this.initWorkers++;
+      jobData.set(req.ip, config);
       this.log.info(
         `Initializing worker #${this.initWorkers} of ${this.totalWorkers} for ${job.name}`
       );
@@ -129,6 +138,18 @@ export class ControllerServer {
         res.json(true);
       } else {
         this.log.info('No work left');
+        res.json(false);
+      }
+    };
+  }
+
+  done() {
+    const done = new Set();
+    return (req: Request, res: Response) => {
+      done.add(req.params.id);
+      if (done.size >= this.totalWorkers) {
+        res.json(true);
+      } else {
         res.json(false);
       }
     };

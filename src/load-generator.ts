@@ -71,7 +71,6 @@ export class LoadGenerator {
     }
     this.log.debug('account is fetched');
     this.log.silly(`account is ${this.accountData}`);
-
     this.txs = [];
 
     while (await this.hasMoreWork()) {
@@ -91,6 +90,8 @@ export class LoadGenerator {
       )
     );
     this.log.info('all transactions are included');
+
+    await controller.notifyDoneAndWaitForOthers(this.publicKeyStr());
   }
 
   async initialize(): Promise<void> {

@@ -16,6 +16,8 @@ export interface Controller {
   notifyReadyAndWaitForOthers(key: any): Promise<void>;
 
   hasMoreWork(): Promise<boolean>;
+
+  notifyDoneAndWaitForOthers(key: any): Promise<void>;
 }
 
 export class LocalController {
@@ -55,6 +57,10 @@ export class LocalController {
   hasMoreWork(): Promise<boolean> {
     return Promise.resolve(this.count-- > 0);
   }
+
+  notifyDoneAndWaitForOthers(_: any) {
+    return Promise.resolve();
+  }
 }
 
 export class RemoteControllerClient implements Controller {
@@ -87,28 +93,45 @@ export class RemoteControllerClient implements Controller {
     return await this.fetch<boolean>(this.readyUrl(key));
   }
 
+  async done(key: any): Promise<boolean> {
+    return await this.fetch<boolean>(this.doneUrl(key));
+  }
+
   async notifyReadyAndWaitForOthers(key: any) {
-    this.log.debug(`notifying readiness as ${key}...`);
+    this.log.info(`notifying readiness as ${key}...`);
     while (!(await this.ready(key))) {
       this.log.info('Other jobs are not ready yet. Waiting...');
       await setTimeout(5 * 1000);
     }
-    this.log.debug('other jobs are ready too');
+    this.log.info('other jobs are ready too');
   }
 
   async hasMoreWork(): Promise<boolean> {
     return this.fetch(this.workUrl());
   }
 
+  async notifyDoneAndWaitForOthers(key: any): Promise<void> {
+    this.log.info(`notifying done as ${key}...`);
+    while (!(await this.done(key))) {
+      this.log.info('Other jobs are not ready yet. Waiting...');
+      await setTimeout(5 * 1000);
+    }
+    this.log.info('other jobs are done too');
+  }
+
   waitUrl(): string {
-    return '/wait';
+    return new URL('/wait', this.url).toString();
   }
 
   readyUrl(key: any): string {
-    return `/ready/${key}`;
+    return new URL(`/ready/${key}`, this.url).toString();
   }
 
   workUrl(): string {
     return new URL(`/work/${this.job}`, this.url).toString();
+  }
+
+  doneUrl(key: any): string {
+    return new URL(`/done/${key}`, this.url).toString();
   }
 }
