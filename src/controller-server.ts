@@ -71,7 +71,7 @@ export class ControllerServer {
       let existingJob = jobData.get(req.ip);
       if (existingJob !== undefined) {
         this.log.info(`Reinitializing worker for ${existingJob.name}`);
-        res.status(200).json({ existingJob });
+        res.status(200).json({ config: existingJob });
         return;
       }
 
