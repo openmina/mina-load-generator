@@ -50,6 +50,13 @@ export class ControllerServer {
     this.allWorkersReady = false;
   }
 
+  logConnection() {
+    return (req: Request, _: Response, next: () => void) => {
+      this.log.trace(`${req.ip} =>> ${req.path}`);
+      next();
+    };
+  }
+
   init() {
     let jobs = Array.from(this.jobs, ([name, c]) => ({
       name,
@@ -129,6 +136,7 @@ export class ControllerServer {
 
   createApp() {
     const app: Express = express();
+    app.use(this.logConnection());
     app.get('/init', this.init());
     app.get('/ready/:id', this.ready());
     app.get('/work/:job', this.moreWork());
