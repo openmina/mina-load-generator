@@ -12,14 +12,8 @@ interface JobConfiguration {
   data: any;
 }
 
-interface JobRuntimeConfig {
-  workers: number;
-  count: number;
-  data: any;
-}
-
 export class ControllerServer {
-  jobs: Map<string, JobRuntimeConfig>;
+  job: JobConfiguration;
   nodes: string[];
   accounts: string[];
 
@@ -32,20 +26,15 @@ export class ControllerServer {
   constructor(
     accounts: string[],
     nodes: string[],
-    config: JobConfiguration[],
+    config: JobConfiguration,
     log: Logger<any>
   ) {
-    this.jobs = new Map(
-      config.map((e) => [
-        e.name,
-        { workers: e.workers, count: e.count, data: e.data },
-      ])
-    );
+    this.job = config;
     this.nodes = nodes;
     this.accounts = accounts;
     this.log = log.getSubLogger({ name: 'controller' });
 
-    this.totalWorkers = config.reduce((a, v) => a + v.workers, 0);
+    this.totalWorkers = config.workers;
     this.initWorkers = 0;
     this.allWorkersReady = false;
   }
@@ -58,38 +47,17 @@ export class ControllerServer {
   }
 
   init() {
-    let jobs = Array.from(this.jobs, ([name, c]) => ({
-      name,
-      workers: c.workers,
-      data: c.data,
-    }));
-    let jobData = new Map();
-    let jobIndex = 0;
     let accountIndex = 0;
     let nodesIndex = 0;
-    return (req: Request, res: Response) => {
-      let existingJob = jobData.get(req.ip);
-      if (existingJob !== undefined) {
-        this.log.info(`Reinitializing worker for ${existingJob.name}`);
-        res.status(200).json({ config: existingJob });
-        return;
-      }
-
-      if (
-        this.allWorkersReady ||
-        accountIndex >= this.accounts.length ||
-        jobIndex >= jobs.length
-      ) {
+    return (_req: Request, res: Response) => {
+      if (this.allWorkersReady || accountIndex >= this.accounts.length) {
         this.log.warn(
-          `not providing work, all ready = ${this.allWorkersReady}, account index = ${accountIndex}, job index = ${jobIndex}`
+          `not providing work, all ready = ${this.allWorkersReady}, account index = ${accountIndex}`
         );
         res.json({});
         return;
       }
-      const job = jobs[jobIndex];
-      if (--job.workers === 0) {
-        jobIndex++;
-      }
+      const job = this.job;
       const account = this.accounts[accountIndex++];
       const graphql = this.nodes[nodesIndex++ % this.nodes.length];
       const config = {
@@ -99,9 +67,8 @@ export class ControllerServer {
         data: job.data,
       };
       this.initWorkers++;
-      jobData.set(req.ip, config);
       this.log.info(
-        `Initializing worker #${this.initWorkers} of ${this.totalWorkers} for ${job.name}`
+        `Initializing worker #${this.initWorkers} of ${this.totalWorkers}`
       );
       res.status(200).json({ config });
     };
@@ -127,11 +94,7 @@ export class ControllerServer {
   moreWork() {
     return (req: Request, res: Response) => {
       const name = req.params.job;
-      const job = this.jobs.get(name);
-      if (job === undefined) {
-        res.status(404).json({ error: `no job ${name}` });
-        return;
-      }
+      const job = this.job;
       if (job.count > 0) {
         job.count--;
         this.log.info(`Providing work for ${name}, ${job.count} work left`);
@@ -203,7 +166,7 @@ command
       const nodes = await readLines(nodesFile);
       const config = JSON.parse(
         (await readFile(configFile)).toString()
-      ) as JobConfiguration[];
+      ) as JobConfiguration;
       let controller = new ControllerServer(accounts, nodes, config, log);
       let server = controller
         .createApp()
