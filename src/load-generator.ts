@@ -85,7 +85,9 @@ export class LoadGenerator {
     );
     await Promise.all(
       this.txs.map((txId) =>
-        txId.wait().then(() => this.log.debug(`${txId.hash()} included`))
+        txId
+          .wait({ maxAttempts: 120, interval: 30 })
+          .then(() => this.log.debug(`${txId.hash()} included`))
       )
     );
     this.log.info('all transactions are included');
