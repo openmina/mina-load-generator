@@ -1,6 +1,5 @@
 import { Command } from '@commander-js/extra-typings';
 import {
-  AccountUpdate,
   fetchAccount,
   isReady,
   Mina,
@@ -16,8 +15,6 @@ import { Controller } from './controller.js';
 import { LoadDescriptor, LoadRegistry } from './load-registry.js';
 import { myParseInt } from './parse-int.js';
 import { LOG } from './log.js';
-import { writeFile } from 'fs/promises';
-import { TransactionId } from 'snarkyjs/dist/node/lib/mina.js';
 
 export interface Load {
   prepare(): Promise<void>;
@@ -33,7 +30,6 @@ export class LoadGenerator {
   name: string;
   load: LoadDescriptor;
   log: Logger<any>;
-  txs: TransactionId[];
 
   constructor() {
     this.log = LOG.getSubLogger({ name: 'load-gen' });
@@ -71,22 +67,35 @@ export class LoadGenerator {
     }
     this.log.debug('account is fetched');
     this.log.silly(`account is ${this.accountData}`);
-    this.txs = [];
+    let txs = [];
 
     while (await this.hasMoreWork()) {
       this.log.debug('has more work');
-      await this.doWork();
+      let tx = await this.doWork();
+      if (tx != undefined) txs.push(tx);
     }
     this.log.debug('no more work');
 
+    this.log.info(`sending ${txs.length} transactions...`);
+    let ids = [];
+    for (let tx of txs) {
+      let id = await tx.send();
+      if (id.isSuccess) {
+        this.log.info(`sent ${id.hash()}`);
+        ids.push(id);
+      } else {
+        this.log.error('error sending transaction:', (id as any).errors);
+      }
+    }
+
     this.log.info(
-      `waiting for ${this.txs.length} transactions to be in the chain...`
+      `waiting for ${ids.length} transactions to be in the chain...`
     );
     await Promise.all(
-      this.txs.map((txId) =>
-        txId
-          .wait({ maxAttempts: 240, interval: 30000 })
-          .then(() => this.log.debug(`${txId.hash()} included`))
+      ids.map((id) =>
+        id
+          .wait({ maxAttempts: 720 }) // 4 hours
+          .then(() => this.log.debug(`${id.hash()} included`))
       )
     );
     this.log.info('all transactions are included');
@@ -119,7 +128,7 @@ export class LoadGenerator {
     return this.controller.hasMoreWork();
   }
 
-  async doWork(): Promise<void> {
+  async doWork(): Promise<Mina.Transaction | undefined> {
     this.log.silly('preparing transaction...');
     let body = this.load.transactionBody();
     let tx = await Mina.transaction(
@@ -138,24 +147,12 @@ export class LoadGenerator {
       this.log.silly('proof is generated');
 
       this.log.silly('signing and sending the transaction...');
-      tx.sign([this.privateKey()]);
+      return tx.sign([this.privateKey()]);
       // await writeFile("transaction.json", tx.toJSON());
       // await writeFile("transaction.graphql", tx.toGraphqlQuery());
-      let sentTx = await tx.send();
-      //this.log.silly('sentTx', sentTx);
-      if (sentTx.isSuccess) {
-        this.log.info('tx hash:', sentTx.hash());
-        this.txs.push(sentTx);
-        // this.log.info('waiting for it to be in block...');
-        // await sentTx.wait();
-        // this.log.info('transaction is in block');
-      } else {
-        for (let error of (sentTx as any).errors) {
-          this.log.error('error sending transaction:', error);
-        }
-      }
     } catch (e) {
       this.log.error('error proving/signing/sending the transaction', e);
+      return;
     }
   }
 
