@@ -85,7 +85,7 @@ export class LoadGenerator {
     await Promise.all(
       this.txs.map((txId) =>
         txId
-          .wait({ maxAttempts: 120, interval: 30000 })
+          .wait({ maxAttempts: 240, interval: 30000 })
           .then(() => this.log.debug(`${txId.hash()} included`))
       )
     );
