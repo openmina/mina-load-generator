@@ -127,7 +127,7 @@ class Simple4 extends MultiAccTrans implements LoadDescriptor {
     };
   }
 }
-LoadRegistry.register('simple4', Simple4);
+LoadRegistry.register('sign-x4', Simple4);
 
 class Simple8 extends MultiAccTrans implements LoadDescriptor {
   transactionBody() {
@@ -244,7 +244,7 @@ class ZkApp3 extends MultiAccWithZkApp implements LoadDescriptor {
     };
   }
 }
-LoadRegistry.register('zkapp3', ZkApp3);
+LoadRegistry.register('sign-proof-x3', ZkApp3);
 
 class ZkApp4 extends MultiAccWithZkApp implements LoadDescriptor {
   transactionBody() {
