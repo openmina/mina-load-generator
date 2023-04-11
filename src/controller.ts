@@ -113,7 +113,7 @@ export class RemoteControllerClient implements Controller {
   async notifyDoneAndWaitForOthers(key: any): Promise<void> {
     this.log.info(`notifying done as ${key}...`);
     while (!(await this.done(key))) {
-      this.log.info('Other jobs are not ready yet. Waiting...');
+      this.log.info('Other jobs are not done yet. Waiting...');
       await setTimeout(5 * 1000);
     }
     this.log.info('other jobs are done too');
