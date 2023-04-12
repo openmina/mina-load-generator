@@ -15,6 +15,7 @@ import { Controller } from './controller.js';
 import { LoadDescriptor, LoadRegistry } from './load-registry.js';
 import { myParseInt } from './parse-int.js';
 import { LOG } from './log.js';
+import { setTimeout } from 'timers/promises';
 
 export interface Load {
   prepare(): Promise<void>;
@@ -86,6 +87,7 @@ export class LoadGenerator {
       } else {
         this.log.error('error sending transaction:', (id as any).errors);
       }
+      await setTimeout(10 * 1000);
     }
 
     this.log.info(
