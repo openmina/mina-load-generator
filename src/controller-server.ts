@@ -109,10 +109,17 @@ export class ControllerServer {
   done() {
     const done = new Set();
     return (req: Request, res: Response) => {
-      done.add(req.params.id);
+      const id = req.params.id;
+      done.add(id);
       if (done.size >= this.totalWorkers) {
+        this.log.debug(`${id}: all workers reported done`);
         res.json(true);
       } else {
+        this.log.debug(
+          `${id} reported done, waiting for other ${
+            this.totalWorkers - done.size
+          }`
+        );
         res.json(false);
       }
     };
@@ -120,7 +127,7 @@ export class ControllerServer {
 
   createApp() {
     const app: Express = express();
-    app.use(this.logConnection());
+    //app.use(this.logConnection());
     app.get('/init', this.init());
     app.get('/ready/:id', this.ready());
     app.get('/work/:job', this.moreWork());
