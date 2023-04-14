@@ -133,6 +133,12 @@ export class LoadGenerator {
   async doWork(): Promise<Mina.Transaction | undefined> {
     this.log.silly('preparing transaction...');
     let body = this.load.transactionBody();
+    let signers = this.load.signers || [];
+    signers.push(this.privateKey());
+    this.log.debug(
+      'signers: ',
+      signers.map((k) => k.toBase58())
+    );
     let tx = await Mina.transaction(
       {
         fee: UInt64.from(100e9),
@@ -149,7 +155,7 @@ export class LoadGenerator {
       this.log.silly('proof is generated');
 
       this.log.silly('signing and sending the transaction...');
-      return tx.sign([this.privateKey()]);
+      return tx.sign(signers);
       // await writeFile("transaction.json", tx.toJSON());
       // await writeFile("transaction.graphql", tx.toGraphqlQuery());
     } catch (e) {

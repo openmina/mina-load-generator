@@ -4,6 +4,7 @@ import { PrivateKey } from 'snarkyjs';
 export interface LoadDescriptor {
   initialize(account: PrivateKey): Promise<void>;
   transactionBody(): () => void;
+  signers?: PrivateKey[];
 }
 
 type Ctor<A extends LoadDescriptor> = new () => A;
