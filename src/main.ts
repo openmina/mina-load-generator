@@ -2,6 +2,7 @@ import { Command } from '@commander-js/extra-typings';
 import { LOG } from './log.js';
 import './multi-account-updates.js';
 import './simple-state-update.js';
+import './token.js';
 import { jobCommand, localCommand } from './load-generator.js';
 import { command as serverCommand } from './controller-server.js';
 
