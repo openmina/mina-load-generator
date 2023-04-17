@@ -133,7 +133,7 @@ export class LoadGenerator {
   async doWork(): Promise<Mina.Transaction | undefined> {
     this.log.silly('preparing transaction...');
     let body = this.load.transactionBody();
-    let signers = this.load.signers || [];
+    let signers = this.load.signers ? [...this.load.signers] : [];
     signers.push(this.privateKey());
     this.log.debug(
       'signers: ',
