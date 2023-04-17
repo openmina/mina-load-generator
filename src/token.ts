@@ -8,24 +8,23 @@ import {
 } from 'snarkyjs';
 import { Logger } from 'tslog';
 import { Account } from './account.js';
-import { LoadDescriptor, LoadRegistry } from './load-registry.js';
+import { AbstractLoad, LoadDescriptor, LoadRegistry } from './load-registry.js';
 import { TestToken } from './TestToken.js';
 
-class TokenTrans implements LoadDescriptor {
+class TokenTrans extends AbstractLoad implements LoadDescriptor {
   log: Logger<any>;
 
   zk: TestToken;
 
-  sender: Account;
   zkAccount: Account;
   receiver: Account;
 
   signers: PrivateKey[];
 
   constructor() {
+    super();
     this.log = new Logger();
     this.zkAccount = new Account();
-    this.sender = new Account();
     this.receiver = new Account();
     this.zk = new TestToken(this.zkAccount.account);
     this.signers = [this.zkAccount.key, this.receiver.key];
@@ -43,10 +42,6 @@ class TokenTrans implements LoadDescriptor {
       () => {
         AccountUpdate.fundNewAccount(account.toPublicKey()).send({
           to: this.zkAccount.account,
-          amount: 100e9,
-        });
-        AccountUpdate.fundNewAccount(account.toPublicKey()).send({
-          to: this.sender.account,
           amount: 100e9,
         });
         AccountUpdate.fundNewAccount(account.toPublicKey()).send({

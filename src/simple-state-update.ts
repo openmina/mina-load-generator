@@ -2,16 +2,17 @@ import { Command } from '@commander-js/extra-typings';
 import { AccountUpdate, Mina, PrivateKey } from 'snarkyjs';
 import { Logger } from 'tslog';
 import { Add } from './Add.js';
-import { LoadDescriptor, LoadRegistry } from './load-registry.js';
+import { LoadDescriptor, LoadRegistry, AbstractLoad } from './load-registry.js';
 import { LOG } from './log.js';
 //import { ControllerConfiguration } from "./controller.js";
 
-export class SimpleStateUpdate implements LoadDescriptor {
+export class SimpleStateUpdate extends AbstractLoad implements LoadDescriptor {
   account: PrivateKey;
   zk: Add;
   log: Logger<any>;
 
   constructor() {
+    super();
     this.log = LOG.getSubLogger({ name: 'ssu' });
   }
 

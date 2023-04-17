@@ -1,7 +1,7 @@
 import { Command } from '@commander-js/extra-typings';
 import { AccountUpdate, Mina, PrivateKey, PublicKey, UInt64 } from 'snarkyjs';
 import { Logger } from 'tslog';
-import { LoadDescriptor, LoadRegistry } from './load-registry.js';
+import { AbstractLoad, LoadDescriptor, LoadRegistry } from './load-registry.js';
 import { LOG } from './log.js';
 import { MultiAcc } from './MultiAcc.js';
 
@@ -10,7 +10,7 @@ export interface Transfer {
   amount: number;
 }
 
-abstract class MultiAccTrans {
+abstract class MultiAccTrans extends AbstractLoad {
   log: Logger<any>;
   sender: PrivateKey;
   a1: PublicKey;
@@ -23,6 +23,7 @@ abstract class MultiAccTrans {
   a8: PublicKey;
 
   constructor() {
+    super();
     this.log = LOG.getSubLogger({ name: 'matp' });
 
     this.a1 = PrivateKey.random().toPublicKey();

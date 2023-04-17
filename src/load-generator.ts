@@ -102,6 +102,8 @@ export class LoadGenerator {
     );
     this.log.info('all transactions are included');
 
+    await this.load.finalize(this.url);
+
     await controller.notifyDoneAndWaitForOthers(this.publicKeyStr());
   }
 
