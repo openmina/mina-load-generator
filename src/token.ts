@@ -49,6 +49,7 @@ class TokenTrans extends AbstractLoad implements LoadDescriptor {
           amount: 100e9,
         });
         this.zk.deploy({ verificationKey, zkappKey: this.zkAccount.key });
+        this.zk.init();
       }
     );
     await tx.prove();

@@ -23,6 +23,11 @@ export class TestToken extends SmartContract {
     });
   }
 
+  @method init() {
+    super.init();
+    this.account.tokenSymbol.set('OMN');
+  }
+
   @method mint(address: PublicKey, amount: UInt64, signature: Signature) {
     signature
       .verify(this.address, amount.toFields().concat(address.toFields()))
