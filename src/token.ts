@@ -1,11 +1,4 @@
-import {
-  AccountUpdate,
-  Mina,
-  PrivateKey,
-  PublicKey,
-  Signature,
-  UInt64,
-} from 'snarkyjs';
+import { AccountUpdate, Mina, PrivateKey, Signature, UInt64 } from 'snarkyjs';
 import { Logger } from 'tslog';
 import { Account } from './account.js';
 import { AbstractLoad, LoadDescriptor, LoadRegistry } from './load-registry.js';
@@ -30,7 +23,7 @@ class TokenTrans extends AbstractLoad implements LoadDescriptor {
     this.signers = [this.zkAccount.key, this.receiver.key];
   }
 
-  async initialize(account: PrivateKey): Promise<void> {
+  async initialize(account: PrivateKey): Promise<boolean> {
     //this.sender = account;
 
     this.log.trace('compiling smart contract...');
@@ -55,6 +48,8 @@ class TokenTrans extends AbstractLoad implements LoadDescriptor {
     await tx.prove();
     let id = await tx.sign([account]).send();
     await id.wait();
+
+    return true;
   }
   transactionBody(): () => void {
     const amount = UInt64.from(10);

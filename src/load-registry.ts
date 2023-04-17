@@ -2,15 +2,15 @@ import { Command } from '@commander-js/extra-typings';
 import { PrivateKey } from 'snarkyjs';
 
 export interface LoadDescriptor {
-  initialize(account: PrivateKey): Promise<void>;
+  initialize(account: PrivateKey): Promise<boolean>;
   transactionBody(): () => void;
   finalize(url: string): Promise<void>;
   signers?: PrivateKey[];
 }
 
 export abstract class AbstractLoad implements LoadDescriptor {
-  initialize(_: PrivateKey): Promise<void> {
-    return Promise.resolve();
+  initialize(_: PrivateKey): Promise<boolean> {
+    return Promise.resolve(true);
   }
   abstract transactionBody(): () => void;
   finalize(_: string): Promise<void> {

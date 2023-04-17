@@ -36,8 +36,9 @@ abstract class MultiAccTrans extends AbstractLoad {
     this.a8 = PrivateKey.random().toPublicKey();
   }
 
-  async initialize(account: PrivateKey) {
+  initialize(account: PrivateKey) {
     this.sender = account;
+    return Promise.resolve(true);
   }
 }
 
@@ -87,6 +88,8 @@ abstract class MultiAccWithZkApp extends MultiAccTrans {
     this.log.debug('waiting for account to be funded...');
     await sentTx.wait();
     this.log.info('zkapp is ready and deployed');
+
+    return true;
   }
 }
 

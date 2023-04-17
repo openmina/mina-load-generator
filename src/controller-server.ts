@@ -50,11 +50,16 @@ export class ControllerServer {
     let accountIndex = 0;
     let nodesIndex = 0;
     return (_req: Request, res: Response) => {
-      if (this.allWorkersReady || accountIndex >= this.accounts.length) {
-        this.log.warn(
-          `not providing work, all ready = ${this.allWorkersReady}, account index = ${accountIndex}`
-        );
-        res.json({});
+      if (this.allWorkersReady) {
+        this.log.error('requesting initialization when all workers are ready');
+        res.status(400).json({ error: 'All workers are already initialized' });
+        return;
+      }
+      if (accountIndex >= this.accounts.length) {
+        this.log.error(`not enough accounts for ${accountIndex} workers`);
+        res
+          .status(400)
+          .json({ error: 'too much workers attempt to initialize' });
         return;
       }
       const job = this.job;

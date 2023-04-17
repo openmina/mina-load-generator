@@ -66,6 +66,8 @@ export class SimpleStateUpdate extends AbstractLoad implements LoadDescriptor {
     this.log.debug('waiting for account to be founded...');
     await Mina.waitForFunding(this.account.toPublicKey().toBase58());
     this.log.info('zkapp is ready and deployed');
+
+    return true;
   }
 }
 

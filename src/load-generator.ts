@@ -10,8 +10,11 @@ import {
 } from 'snarkyjs';
 import { Account } from 'snarkyjs/dist/node/lib/mina/account.js';
 import { Logger } from 'tslog';
-import { LocalController, RemoteControllerClient } from './controller.js';
-import { Controller } from './controller.js';
+import {
+  Controller,
+  LocalController,
+  RemoteControllerClient,
+} from './controller.js';
 import { LoadDescriptor, LoadRegistry } from './load-registry.js';
 import { myParseInt } from './parse-int.js';
 import { LOG } from './log.js';
@@ -36,37 +39,65 @@ export class LoadGenerator {
     this.log = LOG.getSubLogger({ name: 'load-gen' });
   }
 
-  async run(controller: Controller) {
+  async runShell(controller: Controller): Promise<void> {
+    let code: number = 0;
+    try {
+      if (!(await this.run(controller))) {
+        this.log.warn(
+          'job failed to initialize, should be restarted with different configuration'
+        );
+        code = 22;
+      }
+    } catch (e) {
+      this.log.error('job failed to run:', e);
+      code = 1;
+    }
+    await shutdown();
+    process.exit(code);
+  }
+
+  async run(controller: Controller): Promise<boolean> {
     this.controller = controller;
     // let data: any;
 
     const config = await controller.getJobConfiguration();
-    if (config === undefined) {
-      this.log.warn('no configuration is return, stopping');
-      return;
+    this.account = PrivateKey.fromBase58(config.account);
+    this.url = config.graphql;
+    this.name = config.name;
+
+    try {
+      this.log.info(
+        `initializing worker with account ${this.account
+          .toPublicKey()
+          .toBase58()} and graphql ${this.url}`
+      );
+      this.load = LoadRegistry.load(this.name);
+
+      this.log.debug(`activating Mina connection to ${this.url}...`);
+      Mina.setActiveInstance(Mina.Network(this.url));
+
+      this.log.debug('initializing...');
+      if (!(await this.load.initialize(this.account))) {
+        this.log.error('error initializing the load');
+        return false;
+      }
+      this.log.debug("fetching sender's account...");
+      if (!(await this.fetchAccount())) {
+        this.log.error('cannot fetch account');
+        return false;
+      }
+      this.log.debug('account is fetched');
+
+      this.log.info('initialized');
+    } catch (e) {
+      this.log.error('failed to initialize worker:', e);
+      return false;
     }
-    ({ account: this.account, graphql: this.url, name: this.name } = config);
-    this.load = LoadRegistry.load(this.name);
-
-    this.log.debug(`activating Mina connection to ${this.url}...`);
-    //let local = Mina.LocalBlockchain();
-    //Mina.setActiveInstance(local);
-    //this.account = local.testAccounts[0].privateKey;
-    Mina.setActiveInstance(Mina.Network(this.url));
-
-    this.log.debug('initializing...');
-    await this.initialize();
-    this.log.debug('initialized');
 
     this.log.debug('notifying readiness...');
     await this.controller.notifyReadyAndWaitForOthers(this.publicKeyStr());
     this.log.debug('ready for work');
 
-    this.log.debug("fetching sender's account...");
-    if (!(await this.fetchAccount())) {
-      return;
-    }
-    this.log.debug('account is fetched');
     this.log.silly(`account is ${this.accountData}`);
     let txs = [];
 
@@ -105,10 +136,8 @@ export class LoadGenerator {
     await this.load.finalize(this.url);
 
     await controller.notifyDoneAndWaitForOthers(this.publicKeyStr());
-  }
 
-  async initialize(): Promise<void> {
-    await this.load.initialize(this.account);
+    return true;
   }
 
   async fetchAccount() {
@@ -133,7 +162,7 @@ export class LoadGenerator {
   }
 
   async doWork(): Promise<Mina.Transaction | undefined> {
-    this.log.silly('preparing transaction...');
+    this.log.trace('preparing transaction...');
     let body = this.load.transactionBody();
     let signers = this.load.signers ? [...this.load.signers] : [];
     signers.push(this.privateKey());
@@ -149,14 +178,14 @@ export class LoadGenerator {
       },
       body
     );
-    //this.log.silly('transaction:', tx);
+    this.log.trace('transaction:', tx.toPretty());
 
     try {
-      this.log.silly('generating a proof...');
+      this.log.trace('generating a proof...');
       await tx.prove();
-      this.log.silly('proof is generated');
+      this.log.trace('proof is generated');
 
-      this.log.silly('signing and sending the transaction...');
+      this.log.trace('signing and sending the transaction...');
       return tx.sign(signers);
       // await writeFile("transaction.json", tx.toJSON());
       // await writeFile("transaction.graphql", tx.toGraphqlQuery());
@@ -215,6 +244,5 @@ for (let command of LoadRegistry.commands()) {
 async function run(controller: Controller) {
   await isReady;
   const generator = new LoadGenerator();
-  await generator.run(controller);
-  await shutdown();
+  await generator.runShell(controller);
 }

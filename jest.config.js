@@ -14,7 +14,6 @@ export default {
   },
   resolver: '<rootDir>/jest-resolver.cjs',
   transformIgnorePatterns: [
-    '<rootDir>/node_modules/(?!snarkyjs/node_modules/tslib)',
   ],
   modulePathIgnorePatterns: ['<rootDir>/build/'],
   moduleNameMapper: {

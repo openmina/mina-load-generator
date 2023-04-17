@@ -1,17 +1,16 @@
 import { Logger } from 'tslog';
 import fetch from 'node-fetch';
 import { setTimeout } from 'timers/promises';
-import { PrivateKey } from 'snarkyjs';
 
-interface JobConfiguration {
-  account: PrivateKey;
+export interface JobConfiguration {
+  account: string;
   graphql: string;
   name: string;
   data?: any;
 }
 
 export interface Controller {
-  getJobConfiguration(): Promise<JobConfiguration | undefined>;
+  getJobConfiguration(): Promise<JobConfiguration>;
 
   notifyReadyAndWaitForOthers(key: any): Promise<void>;
 
@@ -20,7 +19,7 @@ export interface Controller {
   notifyDoneAndWaitForOthers(key: any): Promise<void>;
 }
 
-export class LocalController {
+export class LocalController implements Controller {
   account: string;
   graphql: string;
   name: string;
@@ -41,9 +40,9 @@ export class LocalController {
     this.count = count;
   }
 
-  getJobConfiguration(): Promise<JobConfiguration | undefined> {
+  getJobConfiguration(): Promise<JobConfiguration> {
     return Promise.resolve({
-      account: PrivateKey.fromBase58(this.account),
+      account: this.account,
       graphql: this.graphql,
       name: this.name,
       data: this.data,
@@ -67,25 +66,34 @@ export class RemoteControllerClient implements Controller {
   url: string;
   log: Logger<any>;
   job: string;
-  constructor(url: string, log: Logger<any>) {
+  pollWait: number;
+  constructor(url: string, log: Logger<any>, pollWait?: number) {
     this.url = url;
     this.log = log.getSubLogger();
+    this.pollWait = pollWait ?? 5 * 1000;
   }
 
   async fetch<T>(path: string): Promise<T> {
-    this.log.silly(`fetching ${path}...`);
+    this.log.trace(`fetching ${path}...`);
     let res = await fetch(new URL(path, this.url).toString());
-    let data = (await res.json()) as T;
-    this.log.silly(`response: ${JSON.stringify(data)}`);
-    return data;
+    if (res.ok) {
+      const data = await res.json();
+      this.log.trace('received response:', data);
+      return data as T;
+    } else {
+      const body = await res.json();
+      this.log.trace('received error:', body);
+      const { error } = body as { error: string };
+      throw new Error(error);
+    }
   }
 
-  async getJobConfiguration(): Promise<JobConfiguration | undefined> {
-    let { config } = await this.fetch<any>('/init');
-    if (config !== undefined) {
-      this.job = config?.name;
-      config.account = PrivateKey.fromBase58(config.account);
+  async getJobConfiguration(): Promise<JobConfiguration> {
+    const { config } = await this.fetch<any>('/init');
+    if (config === undefined) {
+      throw Error('Received undefined configuration');
     }
+    this.job = config?.name;
     return config;
   }
 
@@ -101,7 +109,7 @@ export class RemoteControllerClient implements Controller {
     this.log.info(`notifying readiness as ${key}...`);
     while (!(await this.ready(key))) {
       this.log.info('Other jobs are not ready yet. Waiting...');
-      await setTimeout(5 * 1000);
+      await setTimeout(this.pollWait);
     }
     this.log.info('other jobs are ready too');
   }
@@ -120,18 +128,18 @@ export class RemoteControllerClient implements Controller {
   }
 
   waitUrl(): string {
-    return new URL('/wait', this.url).toString();
+    return '/wait';
   }
 
   readyUrl(key: any): string {
-    return new URL(`/ready/${key}`, this.url).toString();
+    return `/ready/${key}`;
   }
 
   workUrl(): string {
-    return new URL(`/work/${this.job}`, this.url).toString();
+    return `/work/${this.job}`;
   }
 
   doneUrl(key: any): string {
-    return new URL(`/done/${key}`, this.url).toString();
+    return `/done/${key}`;
   }
 }
