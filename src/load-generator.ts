@@ -19,6 +19,7 @@ import { LoadDescriptor, LoadRegistry } from './load-registry.js';
 import { myParseInt } from './parse-int.js';
 import { LOG } from './log.js';
 import { setTimeout } from 'timers/promises';
+import { TransactionId } from 'snarkyjs/dist/node/lib/mina.js';
 
 export interface Load {
   prepare(): Promise<void>;
@@ -34,6 +35,10 @@ export class LoadGenerator {
   name: string;
   load: LoadDescriptor;
   log: Logger<any>;
+
+  // wait for a transaction: 20s * 30 attempts * 6 retries = 1h for each transaction.
+  waitMaxRetries: number = 6;
+  waitAttempts: number = 30;
 
   constructor() {
     this.log = LOG.getSubLogger({ name: 'load-gen' });
@@ -122,13 +127,7 @@ export class LoadGenerator {
     this.log.info(
       `waiting for ${ids.length} transactions to be in the chain...`
     );
-    await Promise.all(
-      ids.map((id) =>
-        id
-          .wait({ maxAttempts: 720 }) // 4 hours
-          .then(() => this.log.debug(`${id.hash()} included`))
-      )
-    );
+    await this.waitForTransactions(ids);
     this.log.info('all transactions are included');
 
     await this.load.finalize(this.url);
@@ -136,6 +135,30 @@ export class LoadGenerator {
     await controller.notifyDoneAndWaitForOthers(this.publicKeyStr());
 
     return true;
+  }
+
+  async waitForTransactions(ids: TransactionId[]): Promise<void> {
+    for (const id of ids) {
+      await this.waitForTransaction(id);
+    }
+  }
+
+  async waitForTransaction(id: TransactionId): Promise<void> {
+    this.log.debug(
+      `waiting for transaction ${id.hash()} to be in the chain...`
+    );
+    let retry = 0;
+    while (retry < this.waitMaxRetries) {
+      try {
+        await id.wait({ maxAttempts: this.waitAttempts });
+        this.log.info(`transaction ${id.hash()} included into the chain`);
+        return;
+      } catch (e) {
+        this.log.warn(`error waiting for the transaction ${id.hash()}:`, e);
+        retry++;
+      }
+    }
+    throw Error(`failed to wait for transaction ${id.hash()} to be included`);
   }
 
   async fetchAccount() {
