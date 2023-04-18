@@ -72,9 +72,7 @@ export class ControllerServer {
         data: job.data,
       };
       this.initWorkers++;
-      this.log.info(
-        `Initializing worker #${this.initWorkers} of ${this.totalWorkers}`
-      );
+      this.log.info(`Initializing worker #${this.initWorkers}`);
       res.status(200).json({ config });
     };
   }

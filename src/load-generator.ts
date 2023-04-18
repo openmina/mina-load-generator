@@ -40,20 +40,18 @@ export class LoadGenerator {
   }
 
   async runShell(controller: Controller): Promise<void> {
-    let code: number = 0;
     try {
       if (!(await this.run(controller))) {
         this.log.warn(
           'job failed to initialize, should be restarted with different configuration'
         );
-        code = 22;
+        process.exit(22);
       }
     } catch (e) {
       this.log.error('job failed to run:', e);
-      code = 1;
+      process.exit(125);
     }
     await shutdown();
-    process.exit(code);
   }
 
   async run(controller: Controller): Promise<boolean> {
