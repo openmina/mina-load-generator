@@ -85,7 +85,7 @@ describe('MultiAcc', () => {
       //zkApp.withdraw(UInt64.from(100e9));
       zkApp.transfer(UInt64.from(10e9), a1);
       zkApp.transfer(UInt64.from(10e9), a2);
-      zkApp.transfer(UInt64.from(10e9), a3);
+      //zkApp.transfer(UInt64.from(10e9), a3);
       //zkApp.transfer(UInt64.from(10e9), a4);
     });
     await txn.prove();

@@ -1,10 +1,10 @@
 import { Command } from '@commander-js/extra-typings';
 import { LOG } from './log.js';
-import './multi-account-updates.js';
+// import './multi-account-updates.js';
 import './simple-state-update.js';
-import './token.js';
-import { jobCommand, localCommand } from './load-generator.js';
-import { command as serverCommand } from './controller-server.js';
+// import './token.js';
+// import { command as serverCommand } from './controller-server.js';
+import { runCommand } from './local.js';
 
 await new Command()
   .option(
@@ -16,7 +16,7 @@ await new Command()
   .hook('preAction', (cmd) => {
     LOG.settings.minLevel = cmd.opts().verbose as number;
   })
-  .addCommand(serverCommand)
-  .addCommand(jobCommand)
-  .addCommand(localCommand)
+  // // .addCommand(serverCommand)
+  // // .addCommand(jobCommand)
+  .addCommand(runCommand)
   .parseAsync(process.argv);
