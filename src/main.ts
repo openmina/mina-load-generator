@@ -4,7 +4,12 @@ import { LOG } from './log.js';
 import './simple-state-update.js';
 // import './token.js';
 // import { command as serverCommand } from './controller-server.js';
-import { runCommand } from './local.js';
+import {
+  generateCommand,
+  runCommand,
+  sendCommand,
+  waitCommand,
+} from './local.js';
 
 await new Command()
   .option(
@@ -16,7 +21,8 @@ await new Command()
   .hook('preAction', (cmd) => {
     LOG.settings.minLevel = cmd.opts().verbose as number;
   })
-  // // .addCommand(serverCommand)
-  // // .addCommand(jobCommand)
   .addCommand(runCommand)
+  .addCommand(generateCommand)
+  .addCommand(sendCommand)
+  .addCommand(waitCommand)
   .parseAsync(process.argv);
