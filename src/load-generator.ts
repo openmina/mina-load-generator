@@ -1,5 +1,12 @@
 // import { Command } from '@commander-js/extra-typings';
-import { Field, Mina, PrivateKey, PublicKey, UInt32 } from 'snarkyjs';
+import {
+  fetchTransactionStatus,
+  Field,
+  Mina,
+  PrivateKey,
+  PublicKey,
+  UInt32,
+} from 'snarkyjs';
 //import { ZkappCommand } from 'snarkyjs/dist/node/lib/account_update.js';
 import { Logger } from 'tslog';
 //import { LoadDescriptor, LoadRegistry } from './load-registry.js';
@@ -36,25 +43,13 @@ export interface WaitConfig {
 export class LoadGenerator {
   mina: MinaConnection;
   accounts: AccountSource;
-  txStore: TransactionStore;
-  idsStore: TransactionIdsStore;
-  load: LoadDescriptor;
   log: Logger<any>;
   nonce?: number;
   count: number = 1;
 
-  constructor(
-    mina: MinaConnection,
-    accounts: AccountSource,
-    txStore: TransactionStore,
-    idsStore: TransactionIdsStore,
-    load: LoadDescriptor
-  ) {
+  constructor(mina: MinaConnection, accounts: AccountSource) {
     this.mina = mina;
     this.accounts = accounts;
-    this.txStore = txStore;
-    this.idsStore = idsStore;
-    this.load = load;
     this.log = LOG.getSubLogger({ name: 'gen' });
   }
 
@@ -84,10 +79,13 @@ export class LoadGenerator {
     return TransactionTemplate.fromMina(tx, [...(signers || []), account]);
   }
 
-  async generate(): Promise<void> {
+  async generate(
+    load: LoadDescriptor,
+    txStore: TransactionStore
+  ): Promise<void> {
     const account = await this.accounts.getPrivateKey();
     const publicKey = account.toPublicKey();
-    await this.load.getSetupTransaction(publicKey).then(async (r) => {
+    await load.getSetupTransaction(publicKey).then(async (r) => {
       if (r === undefined) return;
       const { fee, body, signers } = r;
       const ttx = await this.createTransactionTemplate(
@@ -98,7 +96,7 @@ export class LoadGenerator {
       );
       await this.setup(ttx);
     });
-    await this.load.getTransaction(publicKey).then(async (r) => {
+    await load.getTransaction(publicKey).then(async (r) => {
       const { fee, body, signers } = r;
       const ttx = await this.createTransactionTemplate(
         account,
@@ -106,7 +104,7 @@ export class LoadGenerator {
         fee,
         signers
       );
-      await this.txStore.setTransaction(ttx);
+      await txStore.setTransaction(ttx);
     });
   }
 
@@ -137,6 +135,7 @@ export class LoadGenerator {
     let retry = 0;
     while (1) {
       try {
+        fetchTransactionStatus;
         await id.wait({ maxAttempts: config.waitAttempts });
         return;
       } catch (e) {
@@ -151,8 +150,12 @@ export class LoadGenerator {
     }
   }
 
-  async sendAll(config: SendConfig & WaitConfig): Promise<void> {
-    const ttx = await this.txStore.getTransaction();
+  async sendAll(
+    txStore: TransactionStore,
+    idsStore: TransactionIdsStore,
+    config: SendConfig & WaitConfig
+  ): Promise<void> {
+    const ttx = await txStore.getTransaction();
     const acc = await this.accounts.getAccount(ttx.getFeePayer());
     let nonce = acc.nonce;
     const count = config.count || 1;
@@ -160,13 +163,16 @@ export class LoadGenerator {
       this.log.info(`sending tx #${i}...`);
       const id = await this.send(ttx, nonce);
       nonce = nonce.add(1);
-      this.idsStore.addTransactionId(id);
+      idsStore.addTransactionId(id);
       this.log.info(`tx #${i} is sent, hash is ${id.hash()}`);
     }
   }
 
-  async waitAll(config: WaitConfig): Promise<void> {
-    const ids = await this.idsStore.getTransactionIds();
+  async waitAll(
+    idsStore: TransactionIdsStore,
+    config: WaitConfig
+  ): Promise<void> {
+    const ids = await idsStore.getTransactionIds();
     this.log.info(`waiting for ${ids.length} transactions...`);
     for (const id of ids) {
       this.log.info(`waiting for ${id.hash()}...`);

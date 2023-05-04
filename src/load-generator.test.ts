@@ -38,32 +38,36 @@ class TestLoadWithSetup implements LoadDescriptor {
 }
 
 describe('tx template generation', () => {
-  function generator(load: LoadDescriptor) {
+  function generator() {
     const localBlockchain = Mina.LocalBlockchain();
     const minaConn = new LocalBlockchainConnection(localBlockchain);
     const accounts: AccountSource = new LocalBlockchainAccountSource(
       localBlockchain
     );
-    const txStore = new LocalTransactionStore();
-    const idsStore = new LocalTransactionIdsStore();
-    return new LoadGenerator(minaConn, accounts, txStore, idsStore, load);
+    return new LoadGenerator(minaConn, accounts);
   }
 
   it('should get single tx ID after sending test tx to node', async () => {
-    const loadGen = generator(new TestLoad());
-    await loadGen.generate();
-    await loadGen.sendAll({});
-    await expect(loadGen.idsStore.getTransactionIds()).resolves.toHaveProperty(
+    const loadGen = generator();
+    const load = new TestLoad();
+    const txStore = new LocalTransactionStore();
+    const idsStore = new LocalTransactionIdsStore();
+    await loadGen.generate(load, txStore);
+    await loadGen.sendAll(txStore, idsStore, {});
+    await expect(idsStore.getTransactionIds()).resolves.toHaveProperty(
       'length',
       1
     );
   });
 
   it('should get single tx IDs after sending setup and test tx to node', async () => {
-    const loadGen = generator(new TestLoadWithSetup());
-    await loadGen.generate();
-    await loadGen.sendAll({});
-    await expect(loadGen.idsStore.getTransactionIds()).resolves.toHaveProperty(
+    const loadGen = generator();
+    const load = new TestLoadWithSetup();
+    const txStore = new LocalTransactionStore();
+    const idsStore = new LocalTransactionIdsStore();
+    await loadGen.generate(load, txStore);
+    await loadGen.sendAll(txStore, idsStore, {});
+    await expect(idsStore.getTransactionIds()).resolves.toHaveProperty(
       'length',
       1
     );

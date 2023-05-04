@@ -14,7 +14,10 @@ export class TransactionTemplate {
 
   static fromJSON(json: string): TransactionTemplate {
     const { tx, signers } = JSON.parse(json);
-    return new TransactionTemplate(tx, signers.map(PrivateKey.fromJSON));
+    return new TransactionTemplate(
+      tx,
+      signers.map((p: any) => PrivateKey.fromJSON(p))
+    );
   }
 
   private constructor(tx: Stored, signers: PrivateKey[]) {
@@ -25,7 +28,7 @@ export class TransactionTemplate {
   toJSON(): string {
     return JSON.stringify({
       tx: this.tx,
-      signers: this.signers.map(PrivateKey.toJSON),
+      signers: this.signers.map((p) => p.toJSON()),
     });
   }
 
