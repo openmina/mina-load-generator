@@ -1,27 +1,51 @@
 import { Command } from '@commander-js/extra-typings';
-import { AccountUpdate, Mina, PrivateKey } from 'snarkyjs';
+import { AccountUpdate, PrivateKey, PublicKey } from 'snarkyjs';
 import { Logger } from 'tslog';
 import { Add } from './Add.js';
-import { LoadDescriptor, LoadRegistry, AbstractLoad } from './load-registry.js';
+import { LoadRegistry } from './load-registry.js';
+import { LoadDescriptor, TransactionData } from './load-descriptor.js';
 import { LOG } from './log.js';
-//import { ControllerConfiguration } from "./controller.js";
+import { tracePerfAsync } from './perf.js';
 
-export class SimpleStateUpdate extends AbstractLoad implements LoadDescriptor {
+export class SimpleStateUpdate implements LoadDescriptor {
   account: PrivateKey;
   zk: Add;
   log: Logger<any>;
 
   constructor() {
-    super();
     this.log = LOG.getSubLogger({ name: 'ssu' });
+    this.account = PrivateKey.random();
+    this.log.info(`public key: ${this.account.toPublicKey().toBase58()}`);
+    this.log.debug(`private key: ${this.account.toBase58()}`);
   }
 
-  getCommand() {
-    return new Command();
+  async getSetupTransaction(
+    account: PublicKey
+  ): Promise<TransactionData | undefined> {
+    this.log.info('compiling zkApp...');
+    await tracePerfAsync('zkApp compilation', this.log, async () => {
+      await Add.compile();
+    });
+
+    this.zk = new Add(this.account.toPublicKey());
+    return {
+      body: () => {
+        let update = AccountUpdate.fundNewAccount(account);
+        update.send({ to: this.account.toPublicKey(), amount: 10e9 });
+        this.zk.deploy();
+      },
+      signers: [this.account],
+      fee: 10e9,
+    };
   }
 
-  async deploy() {
-    await Add.compile();
+  async getTransaction(_account: PublicKey): Promise<TransactionData> {
+    return {
+      body: () => {
+        this.zk.update();
+      },
+      fee: 1e9,
+    };
   }
 
   transactionBody() {
@@ -29,46 +53,11 @@ export class SimpleStateUpdate extends AbstractLoad implements LoadDescriptor {
       this.zk.update();
     };
   }
-
-  async initialize(account: PrivateKey) {
-    this.account = PrivateKey.random();
-    this.log.info(`public key: ${this.account.toPublicKey().toBase58()}`);
-    this.log.debug(`private key: ${this.account.toBase58()}`);
-
-    this.log.debug('compiling zkApp...');
-    await Add.compile();
-    this.log.debug('done');
-
-    this.zk = new Add(this.account.toPublicKey());
-
-    this.log.debug('deploying zkApp...');
-
-    let tx = await Mina.transaction(
-      { fee: 1e9, sender: account.toPublicKey() },
-      () => {
-        let update = AccountUpdate.fundNewAccount(account.toPublicKey());
-        update.send({ to: this.account.toPublicKey(), amount: 10e9 });
-        this.zk.deploy();
-      }
-    );
-
-    this.log.debug('generating a proof...');
-    await tx.prove();
-
-    this.log.debug('signing and sending the transaction...');
-    let sentTx = await tx.sign([account, this.account]).send();
-    if (!sentTx.isSuccess) {
-      this.log.error('error deploying zkApp');
-      throw 'error deploying zkapp';
-    }
-    this.log.info('deploy transaction is sent: hash is ', sentTx.hash());
-
-    this.log.debug('waiting for account to be funded...');
-    await Mina.waitForFunding(this.account.toPublicKey().toBase58());
-    this.log.info('zkapp is ready and deployed');
-
-    return true;
-  }
 }
 
-LoadRegistry.register('simple-state-update', SimpleStateUpdate);
+LoadRegistry.register(
+  SimpleStateUpdate,
+  new Command('simple-state-update').description(
+    'call `Add.update()` method that increment on-chain state by two'
+  )
+);

@@ -15,9 +15,29 @@
     "emitDecoratorMetadata": true,
     "allowJs": true,
     "declaration": true,
-    "sourceMap": true,
+    "inlineSourceMap": true,
     "noFallthroughCasesInSwitch": true,
-    "allowSyntheticDefaultImports": true
+    "allowSyntheticDefaultImports": true,
+
   },
-  "include": ["./src"]
+ "include": ["./src"],
+    "exclude": [
+        "src/token.ts",
+        "src/multi-account-updates.ts",
+    ]
+    // "files": [
+    //     "src/main.ts",
+    //     "src/local.ts",
+    //     "src/accounts-source.ts",
+    //     "src/load-registry.ts",
+    //     "src/load-generator.ts",
+    //     "src/parse-int.ts",
+    //     "src/log.ts",
+    //     "src/TransactionStore.ts",
+    //     "src/LoadDescriptor.ts",
+    //     "src/mina-connection.ts",
+    //     "src/simple-state-update.ts",
+    //     "src/nodes-source.ts",
+    //     "src/transaction.ts"
+    // ]
 }
