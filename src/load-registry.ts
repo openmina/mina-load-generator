@@ -44,11 +44,11 @@ function loads<Load extends LoadDescriptor, Opts extends OptionValues>(): [
 
 function registerLoadCommand<Opts extends OptionValues>(
   command: Command<[], Opts>,
-  loadAction: (opts: Opts, load: LoadDescriptor) => Promise<void>
+  loadAction: (opts: Opts, load: LoadDescriptor, name: string) => Promise<void>
 ): Command<[], Opts> {
   command.hook('preAction', (command, action) => {
     (action.opts() as any).loadAction = async (load: LoadDescriptor) => {
-      await loadAction(command.opts(), load);
+      await loadAction(command.opts(), load, action.name());
     };
   });
   for (let [cmd, _] of registry) {
