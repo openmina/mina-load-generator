@@ -12,8 +12,8 @@ export class TransactionTemplate {
     return new TransactionTemplate(save(tx), signers);
   }
 
-  static fromJSON(json: string): TransactionTemplate {
-    const { tx, signers } = JSON.parse(json);
+  static fromJSON(json: { tx: any; signers: any[] }): TransactionTemplate {
+    const { tx, signers } = json;
     return new TransactionTemplate(
       tx,
       signers.map((p: any) => PrivateKey.fromJSON(p))
@@ -25,11 +25,11 @@ export class TransactionTemplate {
     this.signers = signers;
   }
 
-  toJSON(): string {
-    return JSON.stringify({
+  toJSON(): { tx: any; signers: any[] } {
+    return {
       tx: this.tx,
       signers: this.signers.map((p) => p.toJSON()),
-    });
+    };
   }
 
   getFeePayer(): PublicKey {

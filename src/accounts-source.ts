@@ -1,13 +1,21 @@
 import { fetchAccount, Mina, PrivateKey, PublicKey, Types } from 'snarkyjs';
-import { MinaGraphQL } from './mina-connection.js';
+import { RemoteService } from './remote-access.js';
 
 export interface AccountSource {
   /** returns existing account private key */
   getPrivateKey(): Promise<PrivateKey>;
   // /** returns private key for the account previously returned by `getAccount` */
   // getKey(account: PublicKey): Promise<PrivateKey>;
+}
 
-  getAccount(publicKey: PublicKey): Promise<Types.Account>;
+export function accountSource(
+  keys?: string[],
+  url?: string,
+  id?: string
+): AccountSource {
+  if (keys) return new PrivateKeysSource(keys);
+  if (url) return new RemoteKeysSource(url, id);
+  throw new Error('empty account sources');
 }
 
 export type LocalBlockchain = ReturnType<typeof Mina.LocalBlockchain>;
@@ -19,10 +27,6 @@ export class LocalBlockchainAccountSource implements AccountSource {
 
   constructor(localBlockchain: LocalBlockchain) {
     this.localBlockchain = localBlockchain;
-  }
-
-  getAccount(publicKey: PublicKey): Promise<Types.Account> {
-    return Promise.resolve(this.localBlockchain.getAccount(publicKey));
   }
 
   getPrivateKey(): Promise<PrivateKey> {
@@ -37,38 +41,11 @@ export class LocalBlockchainAccountSource implements AccountSource {
   // }
 }
 
-class RemoteBlockchainAccountAccess {
-  mina: MinaGraphQL;
-  constructor(mina: MinaGraphQL) {
-    this.mina = mina;
-  }
-  async getAccount(publicKey: PublicKey): Promise<Types.Account> {
-    const res:
-      | { account: Types.Account; error: undefined }
-      | { account: undefined; error: any } = await fetchAccount(
-      { publicKey },
-      this.mina.graphql()
-    );
-    if (res.account !== undefined) {
-      return res.account;
-    } else {
-      throw new Error(
-        `cannot fetch account information for ${publicKey.toBase58()}`,
-        { cause: res.error }
-      );
-    }
-  }
-}
-
-export class PrivateKeysSource
-  extends RemoteBlockchainAccountAccess
-  implements AccountSource
-{
+export class PrivateKeysSource implements AccountSource {
   index: number = 0;
   keys: PrivateKey[];
 
-  constructor(mina: MinaGraphQL, keys: string[]) {
-    super(mina);
+  constructor(keys: string[]) {
     this.keys = keys.map(PrivateKey.fromBase58);
   }
   getPrivateKey(): Promise<PrivateKey> {
@@ -80,4 +57,11 @@ export class PrivateKeysSource
   //     const key = this.keys.find(key => key.toPublicKey() == account);
   //     return key ? Promise.resolve(key) : Promise.reject(new Error(`unknown account: ${account}`));
   // }
+}
+
+export class RemoteKeysSource extends RemoteService implements AccountSource {
+  async getPrivateKey(): Promise<PrivateKey> {
+    const k = await this.get<string>('/accounts');
+    return PrivateKey.fromBase58(k);
+  }
 }

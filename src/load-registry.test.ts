@@ -16,7 +16,7 @@ describe('load registry tests', () => {
         throw new Error('Method not implemented.');
       }
     }
-    LoadRegistry.register(Load, new Command('no-opts'));
+    LoadRegistry.register(Load, () => new Command('no-opts'));
   });
 
   it('should allow registering load with opts', () => {
@@ -31,8 +31,7 @@ describe('load registry tests', () => {
         throw new Error('Method not implemented.');
       }
     }
-    LoadRegistry.register(
-      Load,
+    LoadRegistry.register(Load, () =>
       new Command('with-options').option(
         '-o, --option <foo>',
         'test option',
