@@ -1,10 +1,21 @@
 import { readFile, writeFile } from 'fs/promises';
 import { fetchTransactionStatus } from 'snarkyjs';
 import { TransactionId } from 'snarkyjs/dist/node/lib/mina.js';
+import { RemoteService } from './remote-access.js';
 
 export interface TransactionIdsStore {
   addTransactionId(id: TransactionId): Promise<void>;
   getTransactionIds(): Promise<TransactionId[]>;
+}
+
+export async function transactionIdsStore(
+  file?: string,
+  url?: string,
+  id?: string
+) {
+  if (file !== undefined) return await FileTransactionIdsStore.create(file);
+  if (url !== undefined) return new RemoteTransactionIdsStore(url, id);
+  return new LocalTransactionIdsStore();
 }
 
 export class LocalTransactionIdsStore implements TransactionIdsStore {
@@ -20,11 +31,14 @@ export class LocalTransactionIdsStore implements TransactionIdsStore {
 }
 
 export class FileTransactionIdsStore implements TransactionIdsStore {
-  file: string;
   ids: TransactionId[] = [];
-  constructor(file: string) {
-    this.file = file;
+
+  static async create(file?: string) {
+    const self = new FileTransactionIdsStore();
+    if (file !== undefined) await self.load(file);
+    return self;
   }
+
   addTransactionId(id: TransactionId): Promise<void> {
     this.ids.push(id);
     return Promise.resolve();
@@ -33,11 +47,33 @@ export class FileTransactionIdsStore implements TransactionIdsStore {
     return Promise.resolve([...this.ids]);
   }
 
-  async load() {
-    this.ids = JSON.parse((await readFile(this.file)).toString()).map(fromJSON);
+  commit(file: string) {
+    return this.store(file);
   }
-  async store() {
-    await writeFile(this.file, JSON.stringify(this.ids.map(toJSON)));
+
+  async load(file: string) {
+    this.ids = JSON.parse((await readFile(file)).toString()).map(fromJSON);
+  }
+  async store(file: string) {
+    await writeFile(file, JSON.stringify(this.ids.map(toJSON)));
+  }
+}
+
+export class RemoteTransactionIdsStore
+  extends RemoteService
+  implements TransactionIdsStore
+{
+  async addTransactionId(id: TransactionId): Promise<void> {
+    await this.post('/transaction-id', toJSON(id));
+  }
+
+  async getTransactionIds(): Promise<TransactionId[]> {
+    const res: any[] = await this.get('/transaction-ids');
+    return res.map((d) => fromJSON(d));
+  }
+
+  commit() {
+    return Promise.resolve();
   }
 }
 

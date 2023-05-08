@@ -55,8 +55,7 @@ export class SimpleStateUpdate implements LoadDescriptor {
   }
 }
 
-LoadRegistry.register(
-  SimpleStateUpdate,
+LoadRegistry.register(SimpleStateUpdate, () =>
   new Command('simple-state-update').description(
     'call `Add.update()` method that increment on-chain state by two'
   )

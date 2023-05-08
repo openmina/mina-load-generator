@@ -156,7 +156,7 @@ export class LoadGenerator {
     config: SendConfig & WaitConfig
   ): Promise<void> {
     const ttx = await txStore.getTransaction();
-    const acc = await this.accounts.getAccount(ttx.getFeePayer());
+    const acc = await this.mina.getAccount(ttx.getFeePayer());
     let nonce = acc.nonce;
     const count = config.count || 1;
     for (let i = 0; i < count; i++) {
