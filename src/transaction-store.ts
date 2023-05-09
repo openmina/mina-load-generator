@@ -49,7 +49,7 @@ export class RemoteTransactionStore
   implements TransactionStore
 {
   setTransaction(template: TransactionTemplate): Promise<void> {
-    return this.put('/transaction', template.toJSON());
+    return this.post('/transaction', template.toJSON());
   }
   async getTransaction(): Promise<TransactionTemplate> {
     const res = await this.get<{ tx: any; signers: any[] }>('/transaction');

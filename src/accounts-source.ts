@@ -61,7 +61,7 @@ export class PrivateKeysSource implements AccountSource {
 
 export class RemoteKeysSource extends RemoteService implements AccountSource {
   async getPrivateKey(): Promise<PrivateKey> {
-    const k = await this.get<string>('/accounts');
+    const k = await this.get<string>('/account');
     return PrivateKey.fromBase58(k);
   }
 }
