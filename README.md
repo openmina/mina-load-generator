@@ -9,29 +9,19 @@ $ npm run build
 
 ## Sending a Transaction
 
-### Account Update with Proofs
-
-``` sh
-$ node build/src/main.js local --url http://1.k8.openmina.com:31355/node1/graphql --key EKE5WXywUNqyPoNpU8D9682z6fxcnUdDMQaQN4x6K1wmC8sYXWa1 multi-account-proofs
-```
-
-[Account update zkApp code](src/MultiAcc.ts)
-
-[Transaction body](src/multi-account-proofs.ts#L85-L87)
-
-
-
 ### Account Update with Proofs and Signatures
 
 ``` sh
-$ node build/src/main.js local --url http://1.k8.openmina.com:31355/node1/graphql --key EKE5WXywUNqyPoNpU8D9682z6fxcnUdDMQaQN4x6K1wmC8sYXWa1 multi-account-proofs-sigs
+$ node build/src/main.js run --node http://1.k8.openmina.com:31355/node1/graphql --key EKE5WXywUNqyPoNpU8D9682z6fxcnUdDMQaQN4x6K1wmC8sYXWa1 -- sign-proof-x3
 ```
 
 [Account update zkApp code](src/MultiAcc.ts)
 
-[Transaction body](src/multi-account-proofs-sigs.ts#L85-L90)
+[Transaction body](src/multi-account-updates.ts#L245-L247)
 
 ## Sending Many Transactions in A Cluster
+
+_!!!OUTDATED!!!_
 
 The following commands will deploy the parallel job instances that generate
 zkapp calls, follow the log of one of them, and then delete the deploymen,
