@@ -30,6 +30,10 @@ export class DataServer {
       next();
     });
 
+    app.get('/healthcheck', (_req, res) => {
+      res.sendStatus(200);
+    });
+
     app.get('/nodes', (_req, res) => {
       res.json([...this.nodes]);
       const first = this.nodes.shift();

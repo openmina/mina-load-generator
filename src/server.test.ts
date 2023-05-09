@@ -5,6 +5,18 @@ import { Logger } from 'tslog';
 
 const log = new Logger({ minLevel: 3 });
 
+describe('/healthcheck function', () => {
+  let app: Express;
+  beforeEach(() => {
+    app = new DataServer([], [], log).createApp();
+  });
+
+  it('should reply OK status', async () => {
+    const res = await request(app).get('/healthcheck');
+    expect(res.status).toBe(200);
+  });
+});
+
 describe('/nodes function', () => {
   const nodes = ['node1', 'node2', 'node3'];
   let app: Express;
