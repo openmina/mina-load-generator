@@ -51,7 +51,8 @@ export class DataServer {
     });
 
     app.post('/transaction', express.json({ strict: false }), (req, res) => {
-      this.log.debug('received transaction', req.body);
+      this.log.debug('received transaction');
+      this.log.trace('transaction:', req.body);
       this.txs.push(req.body);
       res.status(200).json(null);
       this.log.debug('transaction templates count:', this.txs.length);
@@ -70,7 +71,7 @@ export class DataServer {
     app.post('/transaction-id', express.json(), (req, res) => {
       this.txIds.push(req.body);
       res.status(200).json(null);
-      this.log.debug('transaction ids count:', this.txs.length);
+      this.log.debug('transaction ids count:', this.txIds.length);
     });
     app.get('/transaction-ids', (_req, res) => {
       if (this.txIds.length === 0) {

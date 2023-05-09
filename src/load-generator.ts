@@ -183,7 +183,7 @@ export class LoadGenerator {
       this.log.info(`sending tx #${i}...`);
       const id = await this.send(ttx, nonce);
       nonce = nonce.add(1);
-      idsStore.addTransactionId(id);
+      await idsStore.addTransactionId(id);
       this.log.info(`tx #${i} is sent, hash is ${id.hash()}`);
     }
   }

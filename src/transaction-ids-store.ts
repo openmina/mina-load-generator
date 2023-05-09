@@ -64,7 +64,8 @@ export class RemoteTransactionIdsStore
   implements TransactionIdsStore
 {
   async addTransactionId(id: TransactionId): Promise<void> {
-    await this.post('/transaction-id', toJSON(id));
+    const json = toJSON(id);
+    await this.post('/transaction-id', json);
   }
 
   async getTransactionIds(): Promise<TransactionId[]> {
