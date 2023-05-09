@@ -6,8 +6,8 @@ export interface NodesSource {
 }
 
 export function nodesSource(nodes?: string[], url?: string, id?: string) {
-  if (nodes !== undefined) return new ListNodeSource(nodes);
   if (url !== undefined) return new RemoteNodeSource(url, id);
+  if (nodes !== undefined) return new ListNodeSource(nodes);
   throw new Error('no input for nodes source');
 }
 

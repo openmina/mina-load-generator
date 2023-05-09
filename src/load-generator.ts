@@ -19,6 +19,7 @@ import { TransactionIdsStore } from './transaction-ids-store.js';
 import { LoadDescriptor, TransactionBody } from './load-descriptor.js';
 import { MinaConnection } from './mina-connection.js';
 import { tracePerfAsync } from './perf.js';
+import { setTimeout } from 'timers/promises';
 
 export interface SendConfig {
   /** count of transactions to be sent */
@@ -131,6 +132,25 @@ export class LoadGenerator {
     return id;
   }
 
+  async account(publicKey: PublicKey) {
+    while (true) {
+      for (let i = 0; i < 6; i++) {
+        try {
+          return await this.mina.getAccount(publicKey);
+        } catch (e) {
+          this.log.warn(`cannot fetch account ${publicKey.toBase58()}: ${e}`);
+          this.log.debug('retrying in 5s...');
+          setTimeout(5 * 1000);
+        }
+      }
+      try {
+        this.mina.nextNode();
+      } catch (cause) {
+        throw new Error('cannot fetch account', { cause });
+      }
+    }
+  }
+
   async wait(id: TransactionId, config: WaitConfig): Promise<void> {
     let retry = 0;
     while (1) {
@@ -156,7 +176,7 @@ export class LoadGenerator {
     config: SendConfig & WaitConfig
   ): Promise<void> {
     const ttx = await txStore.getTransaction();
-    const acc = await this.mina.getAccount(ttx.getFeePayer());
+    const acc = await this.account(ttx.getFeePayer());
     let nonce = acc.nonce;
     const count = config.count || 1;
     for (let i = 0; i < count; i++) {

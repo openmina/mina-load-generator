@@ -1,12 +1,16 @@
 import { fetchAccount, Mina, PublicKey, Types } from 'snarkyjs';
 import { NodesSource } from './nodes-source';
+import { setTimeout } from 'timers/promises';
 
 export interface MinaConnection {
   /** connects to the next Mina node, if available */
   nextNode(): void;
 
   /** fetches account data from the connected blockchain */
-  getAccount(publicKey: PublicKey): Promise<Types.Account>;
+  getAccount(
+    publicKey: PublicKey,
+    options?: { retries: number; period: number }
+  ): Promise<Types.Account>;
 }
 
 export interface MinaGraphQL {
@@ -60,7 +64,10 @@ export class MinaBlockchainConnection implements MinaConnection {
     Mina.setActiveInstance(Mina.Network(this.endpoints[this.currentEndpoint]));
   }
 
-  async getAccount(publicKey: PublicKey): Promise<Types.Account> {
+  async getAccount(
+    publicKey: PublicKey,
+    options: { retries: number; period: number }
+  ): Promise<Types.Account> {
     const res:
       | { account: Types.Account; error: undefined }
       | { account: undefined; error: any } = await fetchAccount(
@@ -70,10 +77,9 @@ export class MinaBlockchainConnection implements MinaConnection {
     if (res.account !== undefined) {
       return res.account;
     } else {
-      throw new Error(
-        `cannot fetch account information for ${publicKey.toBase58()}`,
-        { cause: res.error }
-      );
+      throw new Error(`cannot fetch account ${publicKey.toBase58()}`, {
+        cause: res.error,
+      });
     }
   }
 }

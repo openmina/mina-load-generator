@@ -10,6 +10,7 @@ import {
   sendCommand,
   waitCommand,
 } from './local.js';
+import { serverCommand } from './server.js';
 
 await new Command()
   .option(
@@ -25,4 +26,5 @@ await new Command()
   .addCommand(generateCommand)
   .addCommand(sendCommand)
   .addCommand(waitCommand)
+  .addCommand(serverCommand)
   .parseAsync(process.argv);

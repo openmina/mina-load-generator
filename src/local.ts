@@ -32,7 +32,7 @@ const keysOption = () =>
   new Option(
     '-k, --keys <private-key...>',
     'private keys of existing accounts'
-  ).makeOptionMandatory();
+  );
 
 const countOption = () =>
   new Option('-c, --count <number>', 'count of transactions to send')
@@ -109,10 +109,7 @@ export const sendCommand = new Command()
   .description('send generated zkApp transactions')
   .addOption(nodesOption())
   .addOption(countOption())
-  .requiredOption(
-    '-i, --input <file>',
-    'file to read transaction template from'
-  )
+  .option('-i, --input <file>', 'file to read transaction template from')
   .option('-o, --output <file>', 'file store transaction IDs')
   .addOption(remoteOption)
   .addOption(idOption)
@@ -132,7 +129,7 @@ export const sendCommand = new Command()
         throw new CommanderError(1, '', 'cannot calculate output parameter');
       }
     }
-    const idsStore = await transactionIdsStore(remote, id);
+    const idsStore = await transactionIdsStore(out, remote, id);
     const mina = await MinaBlockchainConnection.create(nodesSrc);
     const generator = new LoadGenerator(mina, accounts);
 

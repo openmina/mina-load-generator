@@ -1,4 +1,4 @@
-import { Mina, PublicKey, shutdown } from 'snarkyjs';
+import { isReady, Mina, PublicKey, shutdown } from 'snarkyjs';
 import {
   AccountSource,
   LocalBlockchainAccountSource,
@@ -37,8 +37,13 @@ class TestLoadWithSetup implements LoadDescriptor {
   }
 }
 
+beforeEach(() => async () => {
+  await isReady;
+});
+
 describe('tx template generation', () => {
-  function generator() {
+  async function generator() {
+    await isReady;
     const localBlockchain = Mina.LocalBlockchain();
     const minaConn = new LocalBlockchainConnection(localBlockchain);
     const accounts: AccountSource = new LocalBlockchainAccountSource(
@@ -48,7 +53,7 @@ describe('tx template generation', () => {
   }
 
   it('should get single tx ID after sending test tx to node', async () => {
-    const loadGen = generator();
+    const loadGen = await generator();
     const load = new TestLoad();
     const txStore = new LocalTransactionStore();
     const idsStore = new LocalTransactionIdsStore();
@@ -61,7 +66,7 @@ describe('tx template generation', () => {
   });
 
   it('should get single tx IDs after sending setup and test tx to node', async () => {
-    const loadGen = generator();
+    const loadGen = await generator();
     const load = new TestLoadWithSetup();
     const txStore = new LocalTransactionStore();
     const idsStore = new LocalTransactionIdsStore();

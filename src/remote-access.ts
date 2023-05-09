@@ -16,12 +16,13 @@ export class RemoteService {
   private headers() {
     return {
       'Content-Type': 'application/json',
-      Accepts: 'application/json',
+      Accept: 'application/json',
       'X-ZkApp-ID': this.id || '',
     };
   }
 
-  private async fetch<O>(path: string, body?: any, method?: string) {
+  private async fetch<O>(path: string, data?: any, method?: string) {
+    const body = data === undefined ? undefined : JSON.stringify(data);
     const res = await fetch(this.url(path), {
       body,
       method,
@@ -32,7 +33,7 @@ export class RemoteService {
         `error accessing ${path}: status ${res.status}, ${res.statusText}`
       );
     }
-    return <O>await res.json();
+    return (await res.json()) as O;
   }
 
   protected async get<O>(path: string): Promise<O> {
