@@ -1,7 +1,8 @@
 import { Command } from '@commander-js/extra-typings';
-import { AccountUpdate, Mina, PrivateKey, PublicKey, UInt64 } from 'snarkyjs';
+import { AccountUpdate, PrivateKey, PublicKey, UInt64 } from 'snarkyjs';
 import { Logger } from 'tslog';
-import { AbstractLoad, LoadDescriptor, LoadRegistry } from './load-registry.js';
+import { LoadDescriptor, TransactionData } from './load-descriptor.js';
+import { LoadRegistry } from './load-registry.js';
 import { LOG } from './log.js';
 import { MultiAcc } from './MultiAcc.js';
 
@@ -10,9 +11,9 @@ export interface Transfer {
   amount: number;
 }
 
-abstract class MultiAccTrans extends AbstractLoad {
+abstract class MultiAccTrans implements LoadDescriptor {
   log: Logger<any>;
-  sender: PrivateKey;
+  sender: PublicKey;
   a1: PublicKey;
   a2: PublicKey;
   a3: PublicKey;
@@ -23,7 +24,6 @@ abstract class MultiAccTrans extends AbstractLoad {
   a8: PublicKey;
 
   constructor() {
-    super();
     this.log = LOG.getSubLogger({ name: 'matp' });
 
     this.a1 = PrivateKey.random().toPublicKey();
@@ -36,10 +36,26 @@ abstract class MultiAccTrans extends AbstractLoad {
     this.a8 = PrivateKey.random().toPublicKey();
   }
 
-  initialize(account: PrivateKey) {
+  getSetupTransaction(
+    account: PublicKey
+  ): Promise<TransactionData | undefined> {
     this.sender = account;
-    return Promise.resolve(true);
+    return Promise.resolve(undefined);
   }
+
+  getTransaction(_account: PublicKey) {
+    return Promise.resolve({
+      fee: 10e9,
+      signers: this.signers(),
+      body: this.body(),
+    });
+  }
+
+  signers(): PrivateKey[] {
+    return [];
+  }
+
+  abstract body(): () => void;
 }
 
 abstract class MultiAccWithZkApp extends MultiAccTrans {
@@ -56,170 +72,152 @@ abstract class MultiAccWithZkApp extends MultiAccTrans {
     this.log.debug(`zkApp private key: ${this.zkKey.toBase58()}`);
   }
 
-  async initialize(account: PrivateKey) {
-    super.initialize(account);
-
+  async getSetupTransaction(account: PublicKey) {
     this.log.debug('compiling zkApp...');
     await MultiAcc.compile();
     this.log.debug('done');
 
-    this.log.debug('deploying zkApp...');
-
-    let tx = await Mina.transaction(
-      { fee: 1e9, sender: account.toPublicKey() },
-      () => {
-        let update = AccountUpdate.fundNewAccount(account.toPublicKey());
+    return {
+      body: () => {
+        let update = AccountUpdate.fundNewAccount(account);
         update.send({ to: this.zkKey.toPublicKey(), amount: 100e9 });
         this.zk.deploy();
-      }
-    );
-
-    // this.log.debug('generating a proof...');
-    // await tx.prove();
-
-    this.log.debug('signing and sending the transaction...');
-    let sentTx = await tx.sign([account, this.zkKey]).send();
-    if (!sentTx.isSuccess) {
-      this.log.error('error deploying zkApp');
-      throw 'error deploying zkapp';
-    }
-    this.log.info('deploy transaction is sent: hash is', sentTx.hash());
-
-    this.log.debug('waiting for account to be funded...');
-    await sentTx.wait();
-    this.log.info('zkapp is ready and deployed');
-
-    return true;
+      },
+      fee: 10e9,
+      signers: [this.zkKey],
+    };
   }
 }
 
-class Simple2 extends MultiAccTrans implements LoadDescriptor {
-  transactionBody() {
+class Simple2 extends MultiAccTrans {
+  body() {
     return () => {
-      AccountUpdate.createSigned(this.sender.toPublicKey()).send({
+      AccountUpdate.createSigned(this.sender).send({
         to: this.a1,
         amount: UInt64.from(10e9),
       });
-      AccountUpdate.createSigned(this.sender.toPublicKey()).send({
+      AccountUpdate.createSigned(this.sender).send({
         to: this.a2,
         amount: UInt64.from(10e9),
       });
     };
   }
 }
-LoadRegistry.register('simple2', Simple2);
+LoadRegistry.register(Simple2, () => new Command('simple2').description(''));
 
-class Simple4 extends MultiAccTrans implements LoadDescriptor {
-  transactionBody() {
+class Simple4 extends MultiAccTrans {
+  body() {
     return () => {
-      AccountUpdate.createSigned(this.sender.toPublicKey()).send({
+      AccountUpdate.createSigned(this.sender).send({
         to: this.a1,
         amount: UInt64.from(10e9),
       });
-      AccountUpdate.createSigned(this.sender.toPublicKey()).send({
+      AccountUpdate.createSigned(this.sender).send({
         to: this.a2,
         amount: UInt64.from(10e9),
       });
-      AccountUpdate.createSigned(this.sender.toPublicKey()).send({
+      AccountUpdate.createSigned(this.sender).send({
         to: this.a3,
         amount: UInt64.from(10e9),
       });
-      AccountUpdate.createSigned(this.sender.toPublicKey()).send({
+      AccountUpdate.createSigned(this.sender).send({
         to: this.a4,
         amount: UInt64.from(10e9),
       });
     };
   }
 }
-LoadRegistry.register('sign-x4', Simple4);
+LoadRegistry.register(Simple4, () => new Command('sign-x4'));
 
-class Simple8 extends MultiAccTrans implements LoadDescriptor {
-  transactionBody() {
+class Simple8 extends MultiAccTrans {
+  body() {
     return () => {
-      AccountUpdate.createSigned(this.sender.toPublicKey()).send({
+      AccountUpdate.createSigned(this.sender).send({
         to: this.a1,
         amount: UInt64.from(10e9),
       });
-      AccountUpdate.createSigned(this.sender.toPublicKey()).send({
+      AccountUpdate.createSigned(this.sender).send({
         to: this.a2,
         amount: UInt64.from(10e9),
       });
-      AccountUpdate.createSigned(this.sender.toPublicKey()).send({
+      AccountUpdate.createSigned(this.sender).send({
         to: this.a3,
         amount: UInt64.from(10e9),
       });
-      AccountUpdate.createSigned(this.sender.toPublicKey()).send({
+      AccountUpdate.createSigned(this.sender).send({
         to: this.a4,
         amount: UInt64.from(10e9),
       });
-      AccountUpdate.createSigned(this.sender.toPublicKey()).send({
+      AccountUpdate.createSigned(this.sender).send({
         to: this.a5,
         amount: UInt64.from(10e9),
       });
-      AccountUpdate.createSigned(this.sender.toPublicKey()).send({
+      AccountUpdate.createSigned(this.sender).send({
         to: this.a6,
         amount: UInt64.from(10e9),
       });
-      AccountUpdate.createSigned(this.sender.toPublicKey()).send({
+      AccountUpdate.createSigned(this.sender).send({
         to: this.a7,
         amount: UInt64.from(10e9),
       });
-      AccountUpdate.createSigned(this.sender.toPublicKey()).send({
+      AccountUpdate.createSigned(this.sender).send({
         to: this.a8,
         amount: UInt64.from(10e9),
       });
     };
   }
 }
-LoadRegistry.register('simple8', Simple8);
+LoadRegistry.register(Simple8, () => new Command('simple8').description(''));
 
-class Simple4AndZkApp4 extends MultiAccWithZkApp implements LoadDescriptor {
-  transactionBody() {
+class Simple4AndZkApp4 extends MultiAccWithZkApp {
+  body() {
     return () => {
       this.zk.deposit(UInt64.from(30e9));
-      AccountUpdate.createSigned(this.sender.toPublicKey()).send({
+      AccountUpdate.createSigned(this.sender).send({
         to: this.a1,
         amount: UInt64.from(10e9),
       });
       this.zk.transfer(UInt64.from(10e9), this.a2);
-      AccountUpdate.createSigned(this.sender.toPublicKey()).send({
+      AccountUpdate.createSigned(this.sender).send({
         to: this.a3,
         amount: UInt64.from(10e9),
       });
       this.zk.transfer(UInt64.from(10e9), this.a4);
-      AccountUpdate.createSigned(this.sender.toPublicKey()).send({
+      AccountUpdate.createSigned(this.sender).send({
         to: this.a5,
         amount: UInt64.from(10e9),
       });
       this.zk.transfer(UInt64.from(10e9), this.a6);
-      AccountUpdate.createSigned(this.sender.toPublicKey()).send({
+      AccountUpdate.createSigned(this.sender).send({
         to: this.a7,
         amount: UInt64.from(10e9),
       });
     };
   }
 }
-LoadRegistry.register('simple4-zkapp4', Simple4AndZkApp4);
+LoadRegistry.register(Simple4AndZkApp4, () =>
+  new Command('simple4-zkapp4').description('')
+);
 
-class ZkApp4AndSimple4 extends MultiAccWithZkApp implements LoadDescriptor {
-  transactionBody() {
+class ZkApp4AndSimple4 extends MultiAccWithZkApp {
+  body() {
     return () => {
-      AccountUpdate.createSigned(this.sender.toPublicKey()).send({
+      AccountUpdate.createSigned(this.sender).send({
         to: this.a1,
         amount: UInt64.from(10e9),
       });
       this.zk.deposit(UInt64.from(30e9));
-      AccountUpdate.createSigned(this.sender.toPublicKey()).send({
+      AccountUpdate.createSigned(this.sender).send({
         to: this.a3,
         amount: UInt64.from(10e9),
       });
       this.zk.transfer(UInt64.from(10e9), this.a2);
-      AccountUpdate.createSigned(this.sender.toPublicKey()).send({
+      AccountUpdate.createSigned(this.sender).send({
         to: this.a5,
         amount: UInt64.from(10e9),
       });
       this.zk.transfer(UInt64.from(10e9), this.a4);
-      AccountUpdate.createSigned(this.sender.toPublicKey()).send({
+      AccountUpdate.createSigned(this.sender).send({
         to: this.a7,
         amount: UInt64.from(10e9),
       });
@@ -227,20 +225,22 @@ class ZkApp4AndSimple4 extends MultiAccWithZkApp implements LoadDescriptor {
     };
   }
 }
-LoadRegistry.register('zkapp4-simple4', ZkApp4AndSimple4);
+LoadRegistry.register(ZkApp4AndSimple4, () =>
+  new Command('zkapp4-simple4').description('')
+);
 
-class ZkApp2 extends MultiAccWithZkApp implements LoadDescriptor {
-  transactionBody() {
+class ZkApp2 extends MultiAccWithZkApp {
+  body() {
     return () => {
       this.zk.deposit(UInt64.from(10e9));
       this.zk.transfer(UInt64.from(10e9), this.a1);
     };
   }
 }
-LoadRegistry.register('zkapp2', ZkApp2);
+LoadRegistry.register(ZkApp2, () => new Command('zkapp2').description(''));
 
-class ZkApp3 extends MultiAccWithZkApp implements LoadDescriptor {
-  transactionBody() {
+class ZkApp3 extends MultiAccWithZkApp {
+  body() {
     return () => {
       this.zk.deposit(UInt64.from(20e9));
       this.zk.transfer(UInt64.from(10e9), this.a1);
@@ -248,10 +248,12 @@ class ZkApp3 extends MultiAccWithZkApp implements LoadDescriptor {
     };
   }
 }
-LoadRegistry.register('sign-proof-x3', ZkApp3);
+LoadRegistry.register(ZkApp3, () =>
+  new Command('sign-proof-x3').description('')
+);
 
-class ZkApp4 extends MultiAccWithZkApp implements LoadDescriptor {
-  transactionBody() {
+class ZkApp4 extends MultiAccWithZkApp {
+  body() {
     return () => {
       this.zk.deposit(UInt64.from(30e9));
       this.zk.transfer(UInt64.from(10e9), this.a1);
@@ -260,10 +262,10 @@ class ZkApp4 extends MultiAccWithZkApp implements LoadDescriptor {
     };
   }
 }
-LoadRegistry.register('zkapp4', ZkApp4);
+LoadRegistry.register(ZkApp4, () => new Command('zkapp4').description(''));
 
-class ZkApp8 extends MultiAccWithZkApp implements LoadDescriptor {
-  transactionBody() {
+class ZkApp8 extends MultiAccWithZkApp {
+  body() {
     return () => {
       this.zk.deposit(UInt64.from(70e9));
       this.zk.transfer(UInt64.from(10e9), this.a1);
@@ -276,10 +278,10 @@ class ZkApp8 extends MultiAccWithZkApp implements LoadDescriptor {
     };
   }
 }
-LoadRegistry.register('zkapp8', ZkApp8);
+LoadRegistry.register(ZkApp8, () => new Command('zkapp8').description(''));
 
-class ZkApp9 extends MultiAccWithZkApp implements LoadDescriptor {
-  transactionBody() {
+class ZkApp9 extends MultiAccWithZkApp {
+  body() {
     return () => {
       this.zk.deposit(UInt64.from(80e9));
       this.zk.transfer(UInt64.from(10e9), this.a1);
@@ -293,4 +295,4 @@ class ZkApp9 extends MultiAccWithZkApp implements LoadDescriptor {
     };
   }
 }
-LoadRegistry.register('zkapp9', ZkApp9);
+LoadRegistry.register(ZkApp9, () => new Command('zkapp9').description(''));
