@@ -33,6 +33,10 @@ $ kubectl --namespace=<NAMESPACE> logs job/send-zkapps --follow
 $ helm --namespace=<NAMESPACE> delete zkapps
 ```
 
+## GraphQL Queries
+
+[graphql.md](graphql.md)
+
 ## License
 
 [Apache-2.0](LICENSE)
