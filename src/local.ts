@@ -109,36 +109,60 @@ export const sendCommand = new Command()
   .description('send generated zkApp transactions')
   .addOption(nodesOption())
   .addOption(countOption())
+  .option('-C, --continuous', 'send transactions continuously')
+  .option(
+    '-I, --interval <millis>',
+    'interval in milliseconds for sending transactions',
+    myParseInt
+  )
   .option('-i, --input <file>', 'file to read transaction template from')
   .option('-o, --output <file>', 'file store transaction IDs')
   .addOption(remoteOption)
   .addOption(idOption)
-  .action(async ({ nodes, input, count, output, remote, id }) => {
-    await isReady;
+  .action(
+    async ({
+      nodes,
+      input,
+      count,
+      continuous,
+      interval,
+      output,
+      remote,
+      id,
+    }) => {
+      await isReady;
 
-    const nodesSrc = nodesSource(nodes, remote, id);
-    const accounts = accountSource([], remote, id);
-    const txStore = transactionStore(input, remote, id);
-    let out = output;
-    if (out === undefined && input !== undefined) {
-      if (input.endsWith(TEMPLATE_SUFFIX)) {
-        out =
-          input.substring(0, input.length - TEMPLATE_SUFFIX.length) +
-          IDS_SUFFIX;
-      } else {
-        throw new CommanderError(1, '', 'cannot calculate output parameter');
+      const nodesSrc = nodesSource(nodes, remote, id);
+      const accounts = accountSource([], remote, id);
+      const txStore = transactionStore(input, remote, id);
+      let out = output;
+      if (
+        out === undefined &&
+        input !== undefined &&
+        continuous === undefined
+      ) {
+        if (input.endsWith(TEMPLATE_SUFFIX)) {
+          out =
+            input.substring(0, input.length - TEMPLATE_SUFFIX.length) +
+            IDS_SUFFIX;
+        } else {
+          throw new CommanderError(1, '', 'cannot calculate output parameter');
+        }
       }
+      const idsStore =
+        continuous === undefined
+          ? await transactionIdsStore(out, remote, id)
+          : undefined;
+      const mina = await MinaBlockchainConnection.create(nodesSrc);
+      const generator = new LoadGenerator(mina, accounts);
+
+      await generator.sendAll(txStore, idsStore, { count, interval });
+      if (out !== undefined)
+        await (idsStore as FileTransactionIdsStore).commit(out);
+
+      await shutdown();
     }
-    const idsStore = await transactionIdsStore(out, remote, id);
-    const mina = await MinaBlockchainConnection.create(nodesSrc);
-    const generator = new LoadGenerator(mina, accounts);
-
-    await generator.sendAll(txStore, idsStore, { count });
-    if (out !== undefined)
-      await (idsStore as FileTransactionIdsStore).commit(out);
-
-    await shutdown();
-  });
+  );
 
 export const waitCommand = new Command()
   .name('wait')

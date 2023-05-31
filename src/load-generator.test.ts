@@ -58,7 +58,7 @@ describe('tx template generation', () => {
     const txStore = new LocalTransactionStore();
     const idsStore = new LocalTransactionIdsStore();
     await loadGen.generate(load, txStore);
-    await loadGen.sendAll(txStore, idsStore, {});
+    await loadGen.sendAll(txStore, idsStore, { count: 1 });
     await expect(idsStore.getTransactionIds()).resolves.toHaveProperty(
       'length',
       1
@@ -71,7 +71,7 @@ describe('tx template generation', () => {
     const txStore = new LocalTransactionStore();
     const idsStore = new LocalTransactionIdsStore();
     await loadGen.generate(load, txStore);
-    await loadGen.sendAll(txStore, idsStore, {});
+    await loadGen.sendAll(txStore, idsStore, { count: 1 });
     await expect(idsStore.getTransactionIds()).resolves.toHaveProperty(
       'length',
       1
