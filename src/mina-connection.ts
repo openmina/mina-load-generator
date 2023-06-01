@@ -1,6 +1,7 @@
 import { fetchAccount, Mina, PublicKey, Types } from 'snarkyjs';
-import { NodesSource } from './nodes-source';
-import { setTimeout } from 'timers/promises';
+import { NodesSource } from './nodes-source.js';
+import { Logger } from 'tslog';
+import { LOG } from './log.js';
 
 export interface MinaConnection {
   /** connects to the next Mina node, if available */
@@ -42,26 +43,35 @@ export class LocalBlockchainConnection implements MinaConnection {
 export class MinaBlockchainConnection implements MinaConnection {
   endpoints: string[];
   currentEndpoint: number;
+  log: Logger<any>;
 
   static async create(nodes: NodesSource) {
     let endpoints = await nodes.getNodes();
-    return new MinaBlockchainConnection(endpoints);
+    return new MinaBlockchainConnection(
+      endpoints,
+      LOG.getSubLogger({ name: 'mina-connection' })
+    );
   }
 
-  private constructor(endpoints: string[]) {
+  private constructor(endpoints: string[], log: Logger<any>) {
     this.endpoints = endpoints;
     this.currentEndpoint = 0;
-    Mina.setActiveInstance(Mina.Network(this.endpoints[0]));
+    this.log = log;
+    this.setActiveInstance(this.endpoints[0]);
   }
+
+  private setActiveInstance(endpoint: string) {
+    this.log.debug('setting Mina endpoint', endpoint);
+    Mina.setActiveInstance(Mina.Network(endpoint));
+  }
+
   private graphql(): string {
     return this.endpoints[this.currentEndpoint];
   }
 
   nextNode(): void {
-    if (this.currentEndpoint + 1 >= this.endpoints.length)
-      throw new Error('no next Mina node');
-    this.currentEndpoint++;
-    Mina.setActiveInstance(Mina.Network(this.endpoints[this.currentEndpoint]));
+    this.currentEndpoint = (this.currentEndpoint + 1) % this.endpoints.length;
+    this.setActiveInstance(this.endpoints[this.currentEndpoint]);
   }
 
   async getAccount(

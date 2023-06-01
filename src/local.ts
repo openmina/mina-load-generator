@@ -171,7 +171,22 @@ export const waitCommand = new Command()
   .option('-i, --input <file>', 'file with transaction IDs')
   .addOption(remoteOption)
   .addOption(idOption)
-  .action(async ({ nodes, input, remote, id }) => {
+  .option(
+    '-r, --retries <number>',
+    'number of retries when waiting for a transaction',
+    myParseInt
+  )
+  .option(
+    '-a, --attempts <number>',
+    'number of attempts to wait for a transaction, in each retry',
+    myParseInt
+  )
+  .option(
+    '-t, --timeout <seconds>',
+    'timeout in seconds to wait for a transaction, in each attempt',
+    myParseInt
+  )
+  .action(async ({ nodes, input, remote, id, retries, attempts, timeout }) => {
     await isReady;
 
     const nodesSrc = nodesSource(nodes, remote, id);
@@ -181,7 +196,11 @@ export const waitCommand = new Command()
     const mina = await MinaBlockchainConnection.create(nodesSrc);
     const generator = new LoadGenerator(mina, accounts);
 
-    await generator.waitAll(idsStore, {});
+    await generator.waitAll(idsStore, {
+      waitMaxRetries: retries,
+      waitAttempts: attempts,
+      interval: timeout,
+    });
 
     await shutdown();
   });

@@ -39,6 +39,8 @@ export interface WaitConfig {
 
   // number of attempts to poll Mina for a transaction status
   readonly waitAttempts?: number;
+
+  readonly interval?: number;
 }
 
 export class LoadGenerator {
@@ -156,12 +158,16 @@ export class LoadGenerator {
     while (1) {
       try {
         fetchTransactionStatus;
-        await id.wait({ maxAttempts: config.waitAttempts });
+        await id.wait({
+          maxAttempts: config.waitAttempts,
+          interval: config.interval,
+        });
         return;
       } catch (e) {
         if (retry < (config.waitMaxRetries || WAIT_MAX_RETRIES)) {
           this.log.warn(`attempt #${retry} failed, retrying...`);
           this.log.trace(`error:`, e);
+          this.mina.nextNode();
           retry++;
         } else {
           throw new Error(`failed to wait for tx ${id.hash()}`, { cause: e });
