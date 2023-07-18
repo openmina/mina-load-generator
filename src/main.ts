@@ -10,6 +10,8 @@ import {
   waitCommand,
 } from './local.js';
 import { serverCommand } from './server.js';
+import { testLocalTx, testTx } from './test-tx.js';
+import { generateKeyPair } from './generate-keypair.js';
 
 await new Command()
   .option(
@@ -26,4 +28,7 @@ await new Command()
   .addCommand(sendCommand)
   .addCommand(waitCommand)
   .addCommand(serverCommand)
+  .addCommand(testTx)
+  .addCommand(testLocalTx)
+  .addCommand(generateKeyPair)
   .parseAsync(process.argv);

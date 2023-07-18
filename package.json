@@ -48,7 +48,7 @@
     "typescript": "^4.7.2"
   },
   "peerDependencies": {
-    "snarkyjs": "github:openmina/snarkyjs#openmina-ci"
+    "snarkyjs": "^0.12.1"
   },
   "dependencies": {
     "@commander-js/extra-typings": "^10.0.2",
