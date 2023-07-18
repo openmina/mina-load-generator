@@ -37,6 +37,15 @@ $ helm --namespace=<NAMESPACE> delete zkapps
 
 [graphql.md](graphql.md)
 
+
+## Testing Simple zkApp Transactions
+
+To run a single simple zkApp transaction containing just a pair of account updates, use the following command:
+
+``` sh
+$ node build/src/main.js test-tx --node <graphql URL> --sender <sender private key> --receiver <receiver public key> --amount 10 --fee 2
+```
+
 ## License
 
 [Apache-2.0](LICENSE)
