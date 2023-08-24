@@ -91,7 +91,7 @@ abstract class MultiAccTrans implements LoadDescriptor {
     this.amount = opts.amount;
     this.fee = opts.fee;
 
-    this.log.debug('accounts:', this.accounts);
+    this.log.debug('accounts:', this.accounts.map(PublicKey.toBase58));
     this.log.debug('amount', this.amount);
     this.log.debug('fee:', this.fee);
   }
