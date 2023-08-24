@@ -1,4 +1,9 @@
-import { Command, Option, OptionValues } from '@commander-js/extra-typings';
+import {
+  Argument,
+  Command,
+  Option,
+  OptionValues,
+} from '@commander-js/extra-typings';
 import { AccountUpdate, PrivateKey, PublicKey, UInt64 } from 'snarkyjs';
 import { Logger } from 'tslog';
 import { LoadDescriptor, TransactionData } from './load-descriptor.js';
@@ -13,7 +18,6 @@ export interface Transfer {
 }
 
 interface SimpleOpts extends OptionValues {
-  receivers: PublicKey[];
   amount: number;
   fee: number;
 }
@@ -23,10 +27,7 @@ interface ZkappOpts extends SimpleOpts {
 }
 
 function accounts() {
-  return new Option(
-    '-r, --receivers <public-key...>',
-    'accounts to transfer funds to'
-  )
+  return new Argument('<public-key...>', 'accounts to transfer funds to')
     .argParser(myParseAccounts)
     .default([]);
 }
@@ -55,11 +56,11 @@ function fee() {
 function simpleCommand(
   name: string,
   description?: string
-): () => Command<[], SimpleOpts> {
+): () => Command<[PublicKey[]], SimpleOpts> {
   return () =>
     new Command(name)
       .description(description || '')
-      .addOption(accounts())
+      .addArgument(accounts())
       .addOption(amount())
       .addOption(fee());
 }
@@ -67,11 +68,11 @@ function simpleCommand(
 function zkappCommand(
   name: string,
   description?: string
-): () => Command<[], ZkappOpts> {
+): () => Command<[PublicKey[]], ZkappOpts> {
   return () =>
     new Command(name)
       .description(description || '')
-      .addOption(accounts())
+      .addArgument(accounts())
       .addOption(amount())
       .addOption(initialAmount())
       .addOption(fee());
@@ -84,9 +85,9 @@ abstract class MultiAccTrans implements LoadDescriptor {
   amount: number;
   fee: number;
 
-  constructor(opts: SimpleOpts) {
+  constructor(accounts: PublicKey[], opts: SimpleOpts) {
     this.log = LOG.getSubLogger({ name: 'matp' });
-    this.accounts = opts.receivers;
+    this.accounts = accounts;
     this.amount = opts.amount;
     this.fee = opts.fee;
 
@@ -122,8 +123,8 @@ abstract class MultiAccWithZkApp extends MultiAccTrans {
   zkKey: PrivateKey;
   initialAmount: number;
 
-  constructor(opts: ZkappOpts) {
-    super(opts);
+  constructor(accounts: PublicKey[], opts: ZkappOpts) {
+    super(accounts, opts);
 
     this.zkKey = PrivateKey.random();
     this.zk = new MultiAcc(this.zkKey.toPublicKey());
