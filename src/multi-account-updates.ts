@@ -89,6 +89,18 @@ abstract class MultiAccWithZkApp extends MultiAccTrans {
   }
 }
 
+class Simple1 extends MultiAccTrans {
+  body() {
+    return () => {
+      AccountUpdate.createSigned(this.sender).send({
+        to: this.a1,
+        amount: UInt64.from(1000e9),
+      });
+    };
+  }
+}
+LoadRegistry.register(Simple1, () => new Command('simple1').description(''));
+
 class Simple2 extends MultiAccTrans {
   body() {
     return () => {
@@ -229,11 +241,20 @@ LoadRegistry.register(ZkApp4AndSimple4, () =>
   new Command('zkapp4-simple4').description('')
 );
 
-class ZkApp2 extends MultiAccWithZkApp {
+class ZkApp1 extends MultiAccWithZkApp {
   body() {
     return () => {
       this.zk.deposit(UInt64.from(10e9));
-      this.zk.transfer(UInt64.from(10e9), this.a1);
+    };
+  }
+}
+LoadRegistry.register(ZkApp1, () => new Command('zkapp1').description(''));
+
+class ZkApp2 extends MultiAccWithZkApp {
+  body() {
+    return () => {
+      this.zk.deposit(UInt64.from(100e9));
+      this.zk.transfer(UInt64.from(50e9), this.a1);
     };
   }
 }
