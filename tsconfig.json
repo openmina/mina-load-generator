@@ -21,4 +21,5 @@
       "allowJs": true,
   },
  "include": ["./src"],
+ "exclude": ["./snarkyjs"],
 }

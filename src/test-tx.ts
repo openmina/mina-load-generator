@@ -27,7 +27,10 @@ export const testTx = new Command()
       });
     });
     let txid = await tx.sign([signer]).send();
-    console.log(txid);
+    if (txid.isSuccess) {
+      console.log('successful:', txid.hash());
+      await txid.wait();
+    }
   });
 
 export const testLocalTx = new Command()
