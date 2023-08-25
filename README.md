@@ -1,3 +1,5 @@
+[![Build Status](https://ci.openmina.com/api/badges/openmina/mina-load-generator/status.svg?ref=refs/heads/main)](https://ci.openmina.com/openmina/mina-load-generator)
+
 # Mina zkapp transactions generator
 
 ## Building
