@@ -186,13 +186,15 @@ export class LoadGenerator {
     let nonce = acc.nonce;
     let i = 0;
     while (!count || i < count) {
+      let wait =
+        interval !== undefined ? setTimeout(interval * 1000) : undefined;
       this.log.info(`sending tx #${i}...`);
       const id = await this.send(ttx, nonce);
       nonce = nonce.add(1);
       if (idsStore !== undefined) await idsStore.addTransactionId(id);
       this.log.info(`tx #${i} is sent, hash is ${id.hash()}`);
-      if (interval !== undefined) {
-        await setTimeout(interval);
+      if (wait !== undefined) {
+        await wait;
       }
       i++;
     }

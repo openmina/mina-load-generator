@@ -36,8 +36,22 @@ const keysOption = () =>
 
 const countOption = () =>
   new Option('-c, --count <number>', 'count of transactions to send')
-    .preset(1)
+    .default(1)
     .argParser(myParseInt);
+
+const infiniteOption = () =>
+  new Option('--infinite', 'send transactions infinitely')
+    .conflicts(['count'])
+    .implies({ wait: false });
+
+const periodOption = () =>
+  new Option(
+    '-p, --period <number>',
+    'period in seconds for transactions to send'
+  ).argParser(myParseInt);
+
+const noWaitOption = () =>
+  new Option('--no-wait', 'do not wait for transactions to be included');
 
 export const runCommand = new Command()
   .name('run')
@@ -46,24 +60,30 @@ export const runCommand = new Command()
   )
   .addOption(keysOption())
   .addOption(nodesOption())
-  .addOption(countOption());
+  .addOption(countOption())
+  .addOption(infiniteOption())
+  .addOption(periodOption())
+  .addOption(noWaitOption());
 
-LoadRegistry.registerLoadCommand(
-  runCommand,
-  async ({ keys, nodes, count }, load, _name) => {
-    const accounts = accountSource(keys);
-    const txStore = transactionStore();
-    const idsStore = await transactionIdsStore();
+LoadRegistry.registerLoadCommand(runCommand, async (opts, load, _name) => {
+  const { keys, nodes, count, infinite, period, wait } = opts;
+  const accounts = accountSource(keys);
+  const txStore = transactionStore();
+  const idsStore = await transactionIdsStore();
 
-    const mina = await MinaBlockchainConnection.create(nodesSource(nodes));
+  const mina = await MinaBlockchainConnection.create(nodesSource(nodes));
 
-    const loadGen = new LoadGenerator(mina, accounts);
+  const loadGen = new LoadGenerator(mina, accounts);
 
-    await loadGen.generate(load, txStore);
-    await loadGen.sendAll(txStore, idsStore, { count });
+  await loadGen.generate(load, txStore);
+  await loadGen.sendAll(txStore, idsStore, {
+    count: infinite ? undefined : count,
+    interval: period,
+  });
+  if (wait) {
     await loadGen.waitAll(idsStore, {});
   }
-);
+});
 
 const remoteOption = new Option(
   '-r, --remote <url>',
