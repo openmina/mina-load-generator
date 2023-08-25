@@ -21,12 +21,11 @@ steps:
 - name: publish
   image: plugins/docker
   settings:
+    username:
+      from_secret: docker_hub_username
     password:
-      from_secret: local_docker_hub_password
-    repo: akoptelov/mina-load-generator
+      from_secret: docker_hub_password
+    repo: openmina/mina-load-generator
     tags:
     - ${DRONE_COMMIT_SHA:0:8}
     - latest
-    username:
-      from_secret: local_docker_hub_username
-
