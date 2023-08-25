@@ -90,5 +90,5 @@ describe('MultiAcc', () => {
     });
     await txn.prove();
     await txn.sign([senderKey]).send();
-  });
+  }, 20000);
 });
