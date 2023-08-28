@@ -46,9 +46,17 @@ const infiniteOption = () =>
 
 const periodOption = () =>
   new Option(
-    '-p, --period <number>',
+    '-p, --period <seconds>',
     'period in seconds for transactions to send'
   ).argParser(myParseInt);
+
+const durationOption = () =>
+  new Option(
+    '-d, --duration <seconds>',
+    'duration in seconds for transactions to send'
+  )
+    .argParser(myParseInt)
+    .conflicts(['count', 'infinite']);
 
 const noWaitOption = () =>
   new Option('--no-wait', 'do not wait for transactions to be included');
@@ -61,12 +69,13 @@ export const runCommand = new Command()
   .addOption(keysOption())
   .addOption(nodesOption())
   .addOption(countOption())
+  .addOption(durationOption())
   .addOption(infiniteOption())
   .addOption(periodOption())
   .addOption(noWaitOption());
 
 LoadRegistry.registerLoadCommand(runCommand, async (opts, load, _name) => {
-  const { keys, nodes, count, infinite, period, wait } = opts;
+  const { keys, nodes, count, duration, infinite, period, wait } = opts;
   const accounts = accountSource(keys);
   const txStore = transactionStore();
   const idsStore = await transactionIdsStore();
@@ -76,8 +85,10 @@ LoadRegistry.registerLoadCommand(runCommand, async (opts, load, _name) => {
   const loadGen = new LoadGenerator(mina, accounts);
 
   await loadGen.generate(load, txStore);
+
   await loadGen.sendAll(txStore, idsStore, {
-    count: infinite ? undefined : count,
+    count: infinite || duration ? undefined : count,
+    duration,
     interval: period,
   });
   if (wait) {

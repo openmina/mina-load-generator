@@ -25,6 +25,9 @@ export interface SendConfig {
   /** count of transactions to be sent */
   readonly count?: number;
 
+  /** duration in seconds during which transactions will be sent */
+  readonly duration?: number;
+
   /** Specific period to use when sending transactions, in seconds.
    * If set, transactions will be sent using this period only after all of them are generated.
    * Otherwise, a transaction is sent as it is generated */
@@ -179,22 +182,26 @@ export class LoadGenerator {
   async sendAll(
     txStore: TransactionStore,
     idsStore: TransactionIdsStore | undefined,
-    { count, interval }: SendConfig
+    { count, duration, interval }: SendConfig
   ): Promise<void> {
     const ttx = await txStore.getTransaction();
     const acc = await this.account(ttx.getFeePayer());
     let nonce = acc.nonce;
     let i = 0;
+    let end =
+      duration !== undefined
+        ? setTimeout(duration * 1000, true)
+        : new Promise(() => {});
     while (!count || i < count) {
-      let wait =
-        interval !== undefined ? setTimeout(interval * 1000) : undefined;
+      let wait = setTimeout((interval || 0) * 1000, false);
       this.log.info(`sending tx #${i}...`);
       const id = await this.send(ttx, nonce);
       nonce = nonce.add(1);
       if (idsStore !== undefined) await idsStore.addTransactionId(id);
       this.log.info(`tx #${i} is sent, hash is ${id.hash()}`);
-      if (wait !== undefined) {
-        await wait;
+      if (await Promise.any([wait, end])) {
+        this.log.info(`duration timeout is reached`);
+        break;
       }
       i++;
     }
