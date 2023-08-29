@@ -9,7 +9,6 @@ import {
   FileTransactionIdsStore,
   transactionIdsStore,
 } from './transaction-ids-store.js';
-import { isReady, shutdown } from 'snarkyjs';
 
 import * as dotenv from 'dotenv';
 import { nodesSource } from './nodes-source.js';
@@ -161,8 +160,6 @@ export const sendCommand = new Command()
       remote,
       id,
     }) => {
-      await isReady;
-
       const nodesSrc = nodesSource(nodes, remote, id);
       const accounts = accountSource([], remote, id);
       const txStore = transactionStore(input, remote, id);
@@ -190,8 +187,6 @@ export const sendCommand = new Command()
       await generator.sendAll(txStore, idsStore, { count, interval });
       if (out !== undefined)
         await (idsStore as FileTransactionIdsStore).commit(out);
-
-      await shutdown();
     }
   );
 
@@ -218,8 +213,6 @@ export const waitCommand = new Command()
     myParseInt
   )
   .action(async ({ nodes, input, remote, id, retries, attempts, timeout }) => {
-    await isReady;
-
     const nodesSrc = nodesSource(nodes, remote, id);
     const accounts = accountSource([], remote, id);
     const idsStore = await transactionIdsStore(input, remote, id);
@@ -232,6 +225,4 @@ export const waitCommand = new Command()
       waitAttempts: attempts,
       interval: timeout,
     });
-
-    await shutdown();
   });

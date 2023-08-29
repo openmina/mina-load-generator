@@ -31,6 +31,5 @@ export function myParseAccount(value: string, _previous: PublicKey) {
 }
 
 export function myParseAccounts(value: string, previous: PublicKey[]) {
-  console.log('>>> ', value);
   return previous.concat(_myParseAccount(value));
 }

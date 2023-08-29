@@ -1,14 +1,5 @@
 import { MultiAcc } from './MultiAcc';
-import {
-  isReady,
-  shutdown,
-  Field,
-  Mina,
-  PrivateKey,
-  PublicKey,
-  AccountUpdate,
-  UInt64,
-} from 'snarkyjs';
+import { Mina, PrivateKey, PublicKey, AccountUpdate, UInt64 } from 'snarkyjs';
 
 /*
  * This file specifies how to test the `MultiAcc` example smart contract. It is safe to delete this file and replace
@@ -34,7 +25,6 @@ describe('MultiAcc', () => {
     a5: PublicKey;
 
   beforeAll(async () => {
-    await isReady;
     if (proofsEnabled) MultiAcc.compile();
   });
 
@@ -59,7 +49,7 @@ describe('MultiAcc', () => {
     // `shutdown()` internally calls `process.exit()` which will exit the running Jest process early.
     // Specifying a timeout of 0 is a workaround to defer `shutdown()` until Jest is done running all tests.
     // This should be fixed with https://github.com/MinaProtocol/mina/issues/10943
-    setTimeout(shutdown, 0);
+    //setTimeout(shutdown, 0);
   });
 
   async function localDeploy() {
