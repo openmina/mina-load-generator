@@ -2,6 +2,7 @@ import { fetchAccount, Mina, PublicKey, Types } from 'snarkyjs';
 import { NodesSource } from './nodes-source.js';
 import { Logger } from 'tslog';
 import { LOG } from './log.js';
+import { isFetchError } from './fetch.js';
 
 export interface MinaConnection {
   /** connects to the next Mina node, if available */
@@ -15,6 +16,30 @@ export interface MinaConnection {
     publicKey: PublicKey,
     options?: { retries: number; period: number }
   ): Promise<Types.Account>;
+}
+
+export async function retryWithConnection<T>(
+  mina: MinaConnection,
+  fn: () => Promise<T>
+): Promise<T> {
+  let retries = mina.nodesCount();
+  if (retries == 0) {
+    return await fn();
+  }
+  while (true) {
+    try {
+      return await fn();
+    } catch (e) {
+      retries--;
+      if (retries > 0 && isFetchError(e)) {
+        if ([408, 500].includes(e.statusCode)) {
+          mina.nextNode();
+          continue;
+        }
+      }
+      throw e;
+    }
+  }
 }
 
 export interface MinaGraphQL {
@@ -39,9 +64,7 @@ export class LocalBlockchainConnection implements MinaConnection {
   }
 
   nodesCount(): number {
-    throw new Error(
-      'Local blockchain does not support multiple node switching'
-    );
+    return 0;
   }
 
   getAccount(publicKey: PublicKey): Promise<Types.Account> {

@@ -10,10 +10,13 @@ const defaultTimeout = 10 * 1000;
 
 type FetchConfig = { timeout?: number };
 type FetchResponse = { data: any; errors?: any };
-type FetchError = {
+export type FetchError = {
   statusCode: number;
   statusText: string;
 };
+export function isFetchError(e: any): e is FetchError {
+  return typeof e === 'object' && 'statusCode' in e;
+}
 
 const log = LOG.getSubLogger({ name: 'fetch' });
 
