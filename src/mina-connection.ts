@@ -3,6 +3,11 @@ import { NodesSource } from './nodes-source.js';
 import { Logger } from 'tslog';
 import { LOG } from './log.js';
 import { isFetchError } from './fetch.js';
+import {
+  BlockchainTransactions,
+  LocalChainTransactions,
+  TransactionsAccess,
+} from './blockchain-transactions.js';
 
 const log = LOG.getSubLogger({ name: 'conn' });
 
@@ -12,6 +17,8 @@ export interface MinaConnection {
 
   /** returns the number of nodes */
   nodesCount(): number;
+
+  transactionAccess(): TransactionsAccess;
 
   /** fetches account data from the connected blockchain */
   getAccount(
@@ -78,6 +85,10 @@ export class LocalBlockchainConnection implements MinaConnection {
     return 0;
   }
 
+  transactionAccess(): TransactionsAccess {
+    return new LocalChainTransactions();
+  }
+
   getAccount(publicKey: PublicKey): Promise<Types.Account> {
     return Promise.resolve(this.localBlockchain.getAccount(publicKey));
   }
@@ -119,6 +130,10 @@ export class MinaBlockchainConnection implements MinaConnection, MinaGraphQL {
   nextNode(): void {
     this.currentEndpoint = (this.currentEndpoint + 1) % this.endpoints.length;
     this.setActiveInstance(this.endpoints[this.currentEndpoint]);
+  }
+
+  transactionAccess(): TransactionsAccess {
+    return new BlockchainTransactions(this);
   }
 
   async getAccount(

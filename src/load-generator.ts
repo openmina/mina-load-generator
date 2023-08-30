@@ -14,6 +14,10 @@ import { MinaConnection, retryWithConnection } from './mina-connection.js';
 import { tracePerfAsync } from './perf.js';
 import { setTimeout } from 'timers/promises';
 import { isFetchError } from './fetch.js';
+import {
+  BlockchainTransactions,
+  TransactionsAccess,
+} from './blockchain-transactions.js';
 
 export interface SendConfig {
   /** count of transactions to be sent */
@@ -43,6 +47,7 @@ export interface WaitConfig {
 export class LoadGenerator {
   mina: MinaConnection;
   accounts: AccountSource;
+  bcTransactions: TransactionsAccess;
   log: Logger<any>;
   nonce?: number;
   count: number = 1;
@@ -50,6 +55,7 @@ export class LoadGenerator {
   constructor(mina: MinaConnection, accounts: AccountSource) {
     this.mina = mina;
     this.accounts = accounts;
+    this.bcTransactions = mina.transactionAccess();
     this.log = LOG.getSubLogger({ name: 'gen' });
   }
 
@@ -112,9 +118,15 @@ export class LoadGenerator {
     this.log.info('setting up transactions...');
     this.log.debug('sending setup transaction...');
     const id = await this.send(ttx);
-    this.log.debug('waiting for setup transaction to be included...');
-    await this.wait(id, {});
-    this.log.info('transactions setup is completed');
+    if (id.isSuccess) {
+      this.log.debug('waiting for setup transaction to be included...');
+      await this.bcTransactions.waitAll([id]);
+      this.log.info('transactions setup is completed');
+    } else {
+      let error = (id as any).error;
+      this.log.error(`failed to send setup transaction: ${error}`);
+      throw error;
+    }
   }
 
   async send(
@@ -220,15 +232,11 @@ export class LoadGenerator {
 
   async waitAll(
     idsStore: TransactionIdsStore,
-    config: WaitConfig
+    _config: WaitConfig
   ): Promise<void> {
     const ids = await idsStore.getTransactionIds();
     this.log.info(`waiting for ${ids.length} transactions...`);
-    for (const id of ids) {
-      this.log.info(`waiting for ${id.hash()}...`);
-      await this.wait(id, config);
-      this.log.info(`${id.hash()} is included`);
-    }
+    this.bcTransactions.waitAll(ids);
   }
 }
 

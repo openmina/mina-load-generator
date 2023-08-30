@@ -111,8 +111,7 @@ LoadRegistry.registerLoadCommand(runCommand, async (opts, load, _name) => {
     interval: period,
   });
   if (wait) {
-    let blockTxs = new BlockchainTransactions(mina, idsStore);
-    await blockTxs.waitAll();
+    await loadGen.waitAll(idsStore, {});
   }
 });
 
