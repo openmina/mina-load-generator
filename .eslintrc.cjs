@@ -15,4 +15,7 @@ module.exports = {
     'no-unused-vars': 'off',
     'no-constant-condition': 'off',
   },
+  "globals": {
+    "NodeJS": true
+  },
 };

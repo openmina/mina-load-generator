@@ -12,6 +12,7 @@ import {
 
 import * as dotenv from 'dotenv';
 import { nodesSource } from './nodes-source.js';
+import { BlockchainTransactions } from './blockchain-transactions.js';
 
 dotenv.config();
 
@@ -91,7 +92,8 @@ LoadRegistry.registerLoadCommand(runCommand, async (opts, load, _name) => {
     interval: period,
   });
   if (wait) {
-    await loadGen.waitAll(idsStore, {});
+    let blockTxs = new BlockchainTransactions(mina, idsStore);
+    await blockTxs.waitAll();
   }
 });
 

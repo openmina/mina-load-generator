@@ -40,7 +40,7 @@ export class LocalBlockchainConnection implements MinaConnection {
   }
 }
 
-export class MinaBlockchainConnection implements MinaConnection {
+export class MinaBlockchainConnection implements MinaConnection, MinaGraphQL {
   endpoints: string[];
   currentEndpoint: number;
   log: Logger<any>;
@@ -65,7 +65,7 @@ export class MinaBlockchainConnection implements MinaConnection {
     Mina.setActiveInstance(Mina.Network(endpoint));
   }
 
-  private graphql(): string {
+  graphql(): string {
     return this.endpoints[this.currentEndpoint];
   }
 
