@@ -46,11 +46,20 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
       -
+        name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          # list of Docker images to use as base name for tags
+          images: |
+            akoptelov/mina-load-generator
+          # generate Docker tags based on the following events/attributes
+          tags: |
+            type=sha,format=short
+            latest
+      -
         name: Build and push
         uses: docker/build-push-action@v4
         with:
           push: true
-          images: akoptelov/mina-load-generator
-          tags: |
-            latest
-            type=sha,format=short
+          tags: ${{ steps.meta.outputs.tags }}
