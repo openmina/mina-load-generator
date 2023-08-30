@@ -1,4 +1,8 @@
 import { fetchAccount, Mina, PrivateKey, PublicKey, Types } from 'snarkyjs';
+import { Logger } from 'tslog';
+import { makeGraphqlRequest } from './fetch.js';
+import { LOG } from './log.js';
+import { MinaConnection, MinaGraphQL } from './mina-connection.js';
 import { RemoteService } from './remote-access.js';
 
 export interface AccountSource {
@@ -41,17 +45,54 @@ export class LocalBlockchainAccountSource implements AccountSource {
   // }
 }
 
+const accountQuery = (pk: string) => `{
+account(publicKey: "${pk}") {
+    nonce
+    inferredNonce
+    balance {
+      total
+    }
+  }
+}`;
+
 export class PrivateKeysSource implements AccountSource {
   index: number = 0;
+  mina: (MinaConnection & MinaGraphQL) | undefined;
   keys: PrivateKey[];
 
-  constructor(keys: string[]) {
+  log: Logger<any>;
+
+  constructor(keys: string[], mina?: MinaConnection & MinaGraphQL) {
     this.keys = keys.map(PrivateKey.fromBase58);
+    this.mina = mina;
+    this.log = LOG.getSubLogger({ name: 'acc-src' });
   }
-  getPrivateKey(): Promise<PrivateKey> {
-    return this.index < this.keys.length
-      ? Promise.resolve(this.keys[this.index++])
-      : Promise.reject(`no more accounts`);
+  async getPrivateKey(): Promise<PrivateKey> {
+    if (this.mina === undefined) {
+      if (this.index >= this.keys.length) {
+        throw new Error('no more accounts');
+      }
+      return this.keys[this.index++];
+    }
+    while (this.index < this.keys.length) {
+      const sk = this.keys[this.index++];
+      const pk = sk.toPublicKey().toBase58();
+      const [resp, error] = await makeGraphqlRequest(
+        accountQuery(pk),
+        this.mina.graphql(),
+        []
+      );
+      if (error) throw Error(error.statusText);
+      let acc = resp?.data.account;
+      this.log.debug('account', pk, acc);
+      if (
+        acc.balance.total >= 1000000 * 1e9 &&
+        acc.nonce == acc.inferredNonce
+      ) {
+        return sk;
+      }
+    }
+    throw new Error('no more accounts');
   }
   // getKey(account: PublicKey): Promise<PrivateKey> {
   //     const key = this.keys.find(key => key.toPublicKey() == account);

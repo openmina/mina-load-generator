@@ -1,5 +1,5 @@
 import { Command, CommanderError, Option } from '@commander-js/extra-typings';
-import { accountSource } from './accounts-source.js';
+import { accountSource, PrivateKeysSource } from './accounts-source.js';
 import { LoadGenerator } from './load-generator.js';
 import { LoadRegistry } from './load-registry.js';
 import { MinaBlockchainConnection } from './mina-connection.js';
@@ -32,7 +32,7 @@ const keysOption = () =>
   new Option(
     '-k, --keys <private-key...>',
     'private keys of existing accounts'
-  );
+  ).makeOptionMandatory();
 
 const countOption = () =>
   new Option('-c, --count <number>', 'count of transactions to send')
@@ -76,11 +76,10 @@ export const runCommand = new Command()
 
 LoadRegistry.registerLoadCommand(runCommand, async (opts, load, _name) => {
   const { keys, nodes, count, duration, infinite, period, wait } = opts;
-  const accounts = accountSource(keys);
+  const mina = await MinaBlockchainConnection.create(nodesSource(nodes));
+  const accounts = new PrivateKeysSource(keys, mina);
   const txStore = transactionStore();
   const idsStore = await transactionIdsStore();
-
-  const mina = await MinaBlockchainConnection.create(nodesSource(nodes));
 
   const loadGen = new LoadGenerator(mina, accounts);
 
