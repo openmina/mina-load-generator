@@ -1,4 +1,9 @@
-import { Command, CommanderError, Option } from '@commander-js/extra-typings';
+import {
+  Command,
+  CommanderError,
+  InvalidArgumentError,
+  Option,
+} from '@commander-js/extra-typings';
 import { accountSource, PrivateKeysSource } from './accounts-source.js';
 import { LoadGenerator } from './load-generator.js';
 import { LoadRegistry } from './load-registry.js';
@@ -13,6 +18,7 @@ import {
 import * as dotenv from 'dotenv';
 import { nodesSource } from './nodes-source.js';
 import { BlockchainTransactions } from './blockchain-transactions.js';
+import timestring from 'timestring';
 
 dotenv.config();
 
@@ -20,6 +26,19 @@ function defaultNodes() {
   return (process.env.GRAPHQL_ENDPOINTS || 'http://localhost:3085/graphql')
     .split(',')
     .map((s) => s.trim());
+}
+
+function durationParser(value: string, _prev: number) {
+  try {
+    return timestring(value, 's');
+  } catch (e) {
+    if (!(e instanceof Error)) {
+      throw e;
+    }
+    throw new InvalidArgumentError(
+      `Failed to parse duration ${value}: ${e.message}`
+    );
+  }
 }
 
 const nodesOption = () =>
@@ -46,16 +65,16 @@ const infiniteOption = () =>
 
 const periodOption = () =>
   new Option(
-    '-p, --period <seconds>',
-    'period in seconds for transactions to send'
-  ).argParser(myParseInt);
+    '-p, --period <duration>',
+    'period in seconds for transactions to send (e.g. 10s, 1m etc.)'
+  ).argParser(durationParser);
 
 const durationOption = () =>
   new Option(
-    '-d, --duration <seconds>',
-    'duration in seconds for transactions to send'
+    '-d, --duration <duration>',
+    'duration in seconds for transactions to send (e.g. 1m, 2h etc.)'
   )
-    .argParser(myParseInt)
+    .argParser(durationParser)
     .conflicts(['count', 'infinite']);
 
 const noWaitOption = () =>
@@ -76,6 +95,7 @@ export const runCommand = new Command()
 
 LoadRegistry.registerLoadCommand(runCommand, async (opts, load, _name) => {
   const { keys, nodes, count, duration, infinite, period, wait } = opts;
+
   const mina = await MinaBlockchainConnection.create(nodesSource(nodes));
   const accounts = new PrivateKeysSource(keys, mina);
   const txStore = transactionStore();
