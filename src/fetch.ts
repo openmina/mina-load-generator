@@ -2,8 +2,8 @@
 // from snarkyjs/src/lib/fetch.ts, that is a part of snarkyjs library.
 
 import { setTimeout } from 'timers';
-import { LOG } from './log';
-import { MinaConnection, MinaGraphQL } from './mina-connection';
+import { LOG } from './log.js';
+import { MinaConnection, MinaGraphQL } from './mina-connection.js';
 //
 // Specify 10 secs as the default timeout
 const defaultTimeout = 10 * 1000;
