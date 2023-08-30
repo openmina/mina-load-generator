@@ -79,8 +79,7 @@ export class PrivateKeysSource implements AccountSource {
       const pk = sk.toPublicKey().toBase58();
       const [resp, error] = await makeGraphqlRequest(
         accountQuery(pk),
-        this.mina.graphql(),
-        []
+        this.mina
       );
       if (error) throw Error(error.statusText);
       let acc = resp?.data.account;

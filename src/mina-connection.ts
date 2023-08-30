@@ -7,6 +7,9 @@ export interface MinaConnection {
   /** connects to the next Mina node, if available */
   nextNode(): void;
 
+  /** returns the number of nodes */
+  nodesCount(): number;
+
   /** fetches account data from the connected blockchain */
   getAccount(
     publicKey: PublicKey,
@@ -30,6 +33,12 @@ export class LocalBlockchainConnection implements MinaConnection {
   }
 
   nextNode(): void {
+    throw new Error(
+      'Local blockchain does not support multiple node switching'
+    );
+  }
+
+  nodesCount(): number {
     throw new Error(
       'Local blockchain does not support multiple node switching'
     );
@@ -67,6 +76,10 @@ export class MinaBlockchainConnection implements MinaConnection, MinaGraphQL {
 
   graphql(): string {
     return this.endpoints[this.currentEndpoint];
+  }
+
+  nodesCount(): number {
+    return this.endpoints.length;
   }
 
   nextNode(): void {
