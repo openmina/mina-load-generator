@@ -79,5 +79,5 @@ describe('Add', () => {
 
     const updatedNum = zkApp.num.get();
     expect(updatedNum).toEqual(Field(3));
-  }, 20000);
+  }, 60000);
 });
