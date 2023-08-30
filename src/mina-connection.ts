@@ -4,6 +4,8 @@ import { Logger } from 'tslog';
 import { LOG } from './log.js';
 import { isFetchError } from './fetch.js';
 
+const log = LOG.getSubLogger({ name: 'conn' });
+
 export interface MinaConnection {
   /** connects to the next Mina node, if available */
   nextNode(): void;
@@ -22,21 +24,24 @@ export async function retryWithConnection<T>(
   mina: MinaConnection,
   fn: () => Promise<T>
 ): Promise<T> {
-  let retries = mina.nodesCount();
-  if (retries == 0) {
+  if (!isMinaGraphQL(mina)) {
     return await fn();
   }
+  let retries = mina.nodesCount();
   while (true) {
     try {
       return await fn();
     } catch (e) {
       retries--;
+      log.debug(`error received from ${mina.graphql()}: ${e}`, e);
       if (retries > 0 && isFetchError(e)) {
         if ([408, 500].includes(e.statusCode)) {
           mina.nextNode();
+          log.debug(`switched to the next endpoint: ${mina.graphql()}`);
           continue;
         }
       }
+      log.debug(`throwing error ${e}`);
       throw e;
     }
   }
@@ -45,6 +50,12 @@ export async function retryWithConnection<T>(
 export interface MinaGraphQL {
   /** returns GraphQL endpoint URL */
   graphql(): string;
+}
+
+export function isMinaGraphQL(
+  v: MinaConnection | MinaGraphQL
+): v is MinaGraphQL {
+  return 'graphql' in v;
 }
 
 type LocalBlockchain = ReturnType<typeof Mina.LocalBlockchain>;

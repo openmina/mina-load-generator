@@ -131,6 +131,7 @@ export class LoadGenerator {
       if (isFetchError(error)) {
         throw error;
       } else {
+        this.log.error(`error returned from send: ${error}`);
         return id;
       }
     });
@@ -201,15 +202,19 @@ export class LoadGenerator {
     while (!count || i < count) {
       let wait = setTimeout((interval || 0) * 1000, false);
       this.log.info(`sending tx #${i}...`);
-      const id = await this.send(ttx, nonce);
-      nonce = nonce.add(1);
-      if (idsStore !== undefined) await idsStore.addTransactionId(id);
-      this.log.info(`tx #${i} is sent, hash is ${id.hash()}`);
+      try {
+        const id = await this.send(ttx, nonce);
+        nonce = nonce.add(1);
+        i++;
+        if (idsStore !== undefined) await idsStore.addTransactionId(id);
+        this.log.info(`tx #${i} is sent, hash is ${id.hash()}`);
+      } catch (e) {
+        this.log.error(`error sending transaction: ${e}`);
+      }
       if (await Promise.any([wait, end])) {
         this.log.info(`duration timeout is reached`);
         break;
       }
-      i++;
     }
   }
 
