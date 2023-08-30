@@ -1,12 +1,5 @@
 // import { Command } from '@commander-js/extra-typings';
-import {
-  fetchTransactionStatus,
-  Field,
-  Mina,
-  PrivateKey,
-  PublicKey,
-  UInt32,
-} from 'snarkyjs';
+import { Field, Mina, PrivateKey, PublicKey, UInt32 } from 'snarkyjs';
 //import { ZkappCommand } from 'snarkyjs/dist/node/lib/account_update.js';
 import { Logger } from 'tslog';
 //import { LoadDescriptor, LoadRegistry } from './load-registry.js';
@@ -160,7 +153,6 @@ export class LoadGenerator {
     let retry = 0;
     while (1) {
       try {
-        fetchTransactionStatus;
         await id.wait({
           maxAttempts: config.waitAttempts,
           interval: config.interval,
@@ -171,6 +163,8 @@ export class LoadGenerator {
           this.log.warn(`attempt #${retry} failed, retrying...`);
           this.log.trace(`error:`, e);
           this.mina.nextNode();
+          // to avoid early exit on the next attempt
+          id.isSuccess = true;
           retry++;
         } else {
           throw new Error(`failed to wait for tx ${id.hash()}`, { cause: e });

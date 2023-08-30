@@ -1,5 +1,4 @@
 import { Command, OptionValues } from '@commander-js/extra-typings';
-import { isReady, PublicKey, shutdown } from 'snarkyjs';
 import { LoadDescriptor } from './load-descriptor.js';
 
 type Ctor<A extends LoadDescriptor, Args extends any[], Opts> = new (
@@ -27,10 +26,8 @@ function register<
       if (loadAction === undefined || loadAction === null) {
         throw new Error('load action is not defined');
       }
-      await isReady;
       const l = new load(...args1, opts);
       await loadAction(l);
-      await shutdown();
     });
     return command;
   };
