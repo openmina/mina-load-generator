@@ -1,5 +1,5 @@
 // import { Command } from '@commander-js/extra-typings';
-import { Field, Mina, PrivateKey, PublicKey, UInt32 } from 'snarkyjs';
+import { Mina, PrivateKey, PublicKey } from 'snarkyjs';
 //import { ZkappCommand } from 'snarkyjs/dist/node/lib/account_update.js';
 import { Logger } from 'tslog';
 //import { LoadDescriptor, LoadRegistry } from './load-registry.js';
@@ -139,7 +139,8 @@ export class LoadGenerator {
       if (isFetchError(error) && retry !== true) {
         if (
           error.statusCode == 200 &&
-          error.statusText.includes('Invalid_nonce') &&
+          (error.statusText.includes('Invalid_nonce') ||
+            error.statusText.includes('Duplicate')) &&
           isMinaGraphQL(this.mina)
         ) {
           let account = await fetchAccount(ttx.getFeePayer(), this.mina);
