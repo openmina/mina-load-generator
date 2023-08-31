@@ -11,7 +11,7 @@ import {
 } from './mina-connection.js';
 //
 // Specify 10 secs as the default timeout
-const defaultTimeout = 10 * 1000;
+const defaultTimeout = 60 * 1000;
 
 type FetchConfig = { timeout?: number };
 type FetchResponse = { data: any; errors?: any };
@@ -152,6 +152,7 @@ export async function makeGraphqlRequest(
     } catch (unknownError) {
       log.warn(`error making graphql request: ${unknownError}`);
       let error = inferError(unknownError);
+      log.debug(`inferred error: ${error}`);
       if ([408, 500].includes(error.statusCode)) {
         // If the request timed out, or internal server error, try the next endpoint
         errors.push({ url, error: `timeout error: ${error}` });

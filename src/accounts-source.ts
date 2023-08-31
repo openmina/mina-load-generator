@@ -1,8 +1,12 @@
-import { fetchAccount, Mina, PrivateKey, PublicKey, Types } from 'snarkyjs';
+import { Mina, PrivateKey, PublicKey } from 'snarkyjs';
 import { Logger } from 'tslog';
 import { makeGraphqlRequest } from './fetch.js';
 import { LOG } from './log.js';
-import { MinaConnection, MinaGraphQL } from './mina-connection.js';
+import {
+  isMinaGraphQL,
+  MinaConnection,
+  MinaGraphQL,
+} from './mina-connection.js';
 import { RemoteService } from './remote-access.js';
 
 export interface AccountSource {
@@ -47,6 +51,7 @@ export class LocalBlockchainAccountSource implements AccountSource {
 
 const accountQuery = (pk: string) => `{
 account(publicKey: "${pk}") {
+    publicKey
     nonce
     inferredNonce
     balance {
@@ -54,6 +59,61 @@ account(publicKey: "${pk}") {
     }
   }
 }`;
+
+interface AccountGraphql {
+  publicKey: string;
+  nonce: string;
+  inferredNonce: string;
+  balance: {
+    total: string;
+  };
+}
+
+export interface Account {
+  publicKey: PublicKey;
+  nonce: number;
+  inferredNonce: number;
+  balance: number;
+}
+
+function parseAccount(value: AccountGraphql): Account {
+  let {
+    publicKey,
+    nonce,
+    inferredNonce,
+    balance: { total: balance },
+  } = value;
+  return {
+    publicKey: PublicKey.fromBase58(publicKey),
+    nonce: parseInt(nonce, 10),
+    inferredNonce: parseInt(inferredNonce, 10),
+    balance: parseInt(balance, 10),
+  };
+}
+
+export async function fetchAccount(
+  pk: PublicKey,
+  mina: MinaConnection
+): Promise<Account> {
+  if (!isMinaGraphQL(mina)) {
+    let acc = await mina.getAccount(pk);
+    let nonce = parseInt(acc.nonce.toBigint().toString(), 10);
+    let balance = parseInt(acc.balance.toString(), 10);
+    return {
+      publicKey: pk,
+      nonce,
+      inferredNonce: nonce,
+      balance,
+    };
+  }
+  const [resp, error] = await makeGraphqlRequest(
+    accountQuery(pk.toBase58()),
+    mina
+  );
+
+  if (error) throw Error(error.statusText);
+  return parseAccount(resp?.data.account);
+}
 
 export class PrivateKeysSource implements AccountSource {
   index: number = 0;
@@ -76,18 +136,8 @@ export class PrivateKeysSource implements AccountSource {
     }
     while (this.index < this.keys.length) {
       const sk = this.keys[this.index++];
-      const pk = sk.toPublicKey().toBase58();
-      const [resp, error] = await makeGraphqlRequest(
-        accountQuery(pk),
-        this.mina
-      );
-      if (error) throw Error(error.statusText);
-      let acc = resp?.data.account;
-      this.log.debug('account', pk, acc);
-      if (
-        acc.balance.total >= 1000000 * 1e9 &&
-        acc.nonce == acc.inferredNonce
-      ) {
+      let acc = await fetchAccount(sk.toPublicKey(), this.mina);
+      if (acc.balance >= 1000000 * 1e9 && acc.nonce == acc.inferredNonce) {
         return sk;
       }
     }

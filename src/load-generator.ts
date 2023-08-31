@@ -6,14 +6,14 @@ import { Logger } from 'tslog';
 import { LOG } from './log.js';
 import { TransactionId } from 'snarkyjs/dist/node/lib/mina.js';
 import { TransactionTemplate } from './transaction.js';
-import { AccountSource } from './accounts-source.js';
+import { AccountSource, fetchAccount } from './accounts-source.js';
 import { TransactionStore } from './transaction-store.js';
 import { TransactionIdsStore } from './transaction-ids-store.js';
 import { LoadDescriptor, TransactionBody } from './load-descriptor.js';
-import { MinaConnection } from './mina-connection.js';
+import { isMinaGraphQL, MinaConnection } from './mina-connection.js';
 import { tracePerfAsync } from './perf.js';
 import { setTimeout } from 'timers/promises';
-import { sendTransaction } from './fetch.js';
+import { isFetchError, sendTransaction } from './fetch.js';
 import { TransactionsAccess } from './blockchain-transactions.js';
 
 export interface SendConfig {
@@ -128,14 +128,30 @@ export class LoadGenerator {
 
   async send(
     ttx: TransactionTemplate,
-    nonce?: number | UInt32 | Field
+    nonce?: number,
+    retry?: boolean
   ): Promise<TransactionId> {
+    this.log.debug(`using nonce ${nonce}`);
     const tx = ttx.getSigned(nonce);
     const id = await sendTransaction(tx, this.mina);
     if (!id.isSuccess) {
+      let error = (id as any).errors[0];
+      if (isFetchError(error) && retry !== true) {
+        if (
+          error.statusCode == 200 &&
+          error.statusText.includes('Invalid_nonce') &&
+          isMinaGraphQL(this.mina)
+        ) {
+          let account = await fetchAccount(ttx.getFeePayer(), this.mina);
+          return await this.send(ttx, account.inferredNonce, true);
+        }
+      }
       throw new Error(`failed to send a transaction`, {
         cause: (id as any).error,
       });
+    }
+    if (nonce !== undefined) {
+      this.nonce = nonce + 1;
     }
     return id;
   }
@@ -189,8 +205,13 @@ export class LoadGenerator {
     { count, duration, interval }: SendConfig
   ): Promise<void> {
     const ttx = await txStore.getTransaction();
-    const acc = await this.account(ttx.getFeePayer());
-    let nonce = acc.nonce;
+    this.log.info(
+      `sending transactions using ${ttx
+        .getFeePayer()
+        .toBase58()} as a fee payer/signer`
+    );
+    const acc = await fetchAccount(ttx.getFeePayer(), this.mina);
+    this.nonce = acc.inferredNonce;
     let i = 0;
     let end =
       duration !== undefined
@@ -199,15 +220,10 @@ export class LoadGenerator {
     while (!count || i < count) {
       let wait = setTimeout((interval || 0) * 1000, false);
       this.log.info(`sending tx #${i}...`);
-      try {
-        const id = await this.send(ttx, nonce);
-        nonce = nonce.add(1);
-        i++;
-        if (idsStore !== undefined) await idsStore.addTransactionId(id);
-        this.log.info(`tx #${i} is sent, hash is ${id.hash()}`);
-      } catch (e) {
-        this.log.error(`error sending transaction: ${e}`);
-      }
+      const id = await this.send(ttx, this.nonce);
+      i++;
+      if (idsStore !== undefined) await idsStore.addTransactionId(id);
+      this.log.info(`tx #${i} is sent, hash is ${id.hash()}`);
       if (await Promise.any([wait, end])) {
         this.log.info(`duration timeout is reached`);
         break;
