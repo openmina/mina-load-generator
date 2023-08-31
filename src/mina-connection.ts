@@ -109,9 +109,9 @@ export class MinaBlockchainConnection implements MinaConnection, MinaGraphQL {
 
   private constructor(endpoints: string[], log: Logger<any>) {
     this.endpoints = endpoints;
-    this.currentEndpoint = 0;
+    this.currentEndpoint = Math.floor(Math.random() * endpoints.length);
     this.log = log;
-    this.setActiveInstance(this.endpoints[0]);
+    this.setActiveInstance(this.endpoints[this.currentEndpoint]);
   }
 
   private setActiveInstance(endpoint: string) {
