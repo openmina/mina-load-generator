@@ -222,9 +222,9 @@ export class LoadGenerator {
       let wait = setTimeout((interval || 0) * 1000, false);
       this.log.info(`sending tx #${i}...`);
       const id = await this.send(ttx, this.nonce);
+      this.log.info(`tx #${i} is sent, hash is ${id.hash()}`);
       i++;
       if (idsStore !== undefined) await idsStore.addTransactionId(id);
-      this.log.info(`tx #${i} is sent, hash is ${id.hash()}`);
       if (await Promise.any([wait, end])) {
         this.log.info(`duration timeout is reached`);
         break;
