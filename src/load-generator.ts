@@ -10,14 +10,11 @@ import { AccountSource } from './accounts-source.js';
 import { TransactionStore } from './transaction-store.js';
 import { TransactionIdsStore } from './transaction-ids-store.js';
 import { LoadDescriptor, TransactionBody } from './load-descriptor.js';
-import { MinaConnection, retryWithConnection } from './mina-connection.js';
+import { MinaConnection } from './mina-connection.js';
 import { tracePerfAsync } from './perf.js';
 import { setTimeout } from 'timers/promises';
-import { isFetchError } from './fetch.js';
-import {
-  BlockchainTransactions,
-  TransactionsAccess,
-} from './blockchain-transactions.js';
+import { sendTransaction } from './fetch.js';
+import { TransactionsAccess } from './blockchain-transactions.js';
 
 export interface SendConfig {
   /** count of transactions to be sent */
@@ -134,19 +131,7 @@ export class LoadGenerator {
     nonce?: number | UInt32 | Field
   ): Promise<TransactionId> {
     const tx = ttx.getSigned(nonce);
-    const id = await retryWithConnection(this.mina, async () => {
-      const id = await tx.send();
-      if (id.isSuccess) {
-        return id;
-      }
-      const error = (id as any).error;
-      if (isFetchError(error)) {
-        throw error;
-      } else {
-        this.log.error(`error returned from send: ${error}`);
-        return id;
-      }
-    });
+    const id = await sendTransaction(tx, this.mina);
     if (!id.isSuccess) {
       throw new Error(`failed to send a transaction`, {
         cause: (id as any).error,

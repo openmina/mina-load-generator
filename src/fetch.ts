@@ -1,9 +1,14 @@
 // The following code is copied (with minor modifications)
 // from snarkyjs/src/lib/fetch.ts, that is a part of snarkyjs library.
 
+import { Transaction } from 'snarkyjs/dist/node/lib/mina.js';
 import { setTimeout } from 'timers';
 import { LOG } from './log.js';
-import { MinaConnection, MinaGraphQL } from './mina-connection.js';
+import {
+  isMinaGraphQL,
+  MinaConnection,
+  MinaGraphQL,
+} from './mina-connection.js';
 //
 // Specify 10 secs as the default timeout
 const defaultTimeout = 10 * 1000;
@@ -19,6 +24,95 @@ export function isFetchError(e: any): e is FetchError {
 }
 
 const log = LOG.getSubLogger({ name: 'fetch' });
+
+export async function sendTransaction(txn: Transaction, mina: MinaConnection) {
+  if (!isMinaGraphQL(mina)) {
+    return await txn.send();
+  }
+
+  txn.sign();
+
+  let [response, error] = await sendZkapp(txn.toJSON(), mina);
+  let errors: any[] | undefined;
+  if (response === undefined && error !== undefined) {
+    console.log('Error: Failed to send transaction', error);
+    errors = [error];
+  } else if (response && response.errors && response.errors.length > 0) {
+    console.log(
+      'Error: Transaction returned with errors',
+      JSON.stringify(response.errors, null, 2)
+    );
+    errors = response.errors;
+  }
+
+  let isSuccess = errors === undefined;
+  let maxAttempts: number;
+  let interval: number;
+
+  return {
+    isSuccess,
+    data: response?.data,
+    errors,
+    async wait(_options?: { maxAttempts?: number; interval?: number }) {
+      throw Error('not implemented');
+    },
+    hash() {
+      return response?.data?.sendZkapp?.zkapp?.hash;
+    },
+  };
+}
+
+/**
+ * Sends a zkApp command (transaction) to the specified GraphQL endpoint.
+ */
+function sendZkapp(
+  json: string,
+  graphqlEndpoint: MinaConnection & MinaGraphQL,
+  { timeout = defaultTimeout } = {}
+) {
+  return makeGraphqlRequest(sendZkappQuery(json), graphqlEndpoint, {
+    timeout,
+  });
+}
+
+// removes the quotes on JSON keys
+function removeJsonQuotes(json: string) {
+  let cleaned = JSON.stringify(JSON.parse(json), null, 2);
+  return cleaned.replace(/"(\S+)"\s*:/gm, '$1:');
+}
+
+function sendZkappQuery(json: string) {
+  return `mutation {
+  sendZkapp(input: {
+    zkappCommand: ${removeJsonQuotes(json)}
+  }) {
+    zkapp {
+      hash
+      id
+      failureReason {
+        failures
+        index
+      }
+      zkappCommand {
+        memo
+        feePayer {
+          body {
+            publicKey
+          }
+        }
+        accountUpdates {
+          body {
+            publicKey
+            useFullCommitment
+            incrementNonce
+          }
+        }
+      }
+    }
+  }
+}
+`;
+}
 
 export async function makeGraphqlRequest(
   query: string,
