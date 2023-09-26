@@ -133,6 +133,7 @@ export class LoadGenerator {
   ): Promise<TransactionId> {
     this.log.debug(`using nonce ${nonce}`);
     const tx = ttx.getSigned(nonce);
+    this.log.silly('signed tx:', tx.toPretty());
     const id = await sendTransaction(tx, this.mina);
     if (!id.isSuccess) {
       let error = (id as any).errors[0];

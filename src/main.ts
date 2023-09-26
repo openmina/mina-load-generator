@@ -3,6 +3,7 @@ import { LOG } from './log.js';
 import './multi-account-updates.js';
 import './simple-state-update.js';
 import './token.js';
+import './fibonacci.js';
 import {
   generateCommand,
   runCommand,
