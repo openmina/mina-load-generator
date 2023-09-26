@@ -14,8 +14,12 @@ type Action = (_: LoadDescriptor) => Promise<void>;
 function register<
   Args extends any[],
   Load extends LoadDescriptor,
-  Opts extends OptionValues
->(load: Ctor<Load, Args, Opts>, _command: () => Command<Args, Opts>): void {
+  Opts,
+  OptValues extends OptionValues & Opts
+>(
+  load: Ctor<Load, Args, Opts>,
+  _command: () => Command<Args, OptValues>
+): void {
   const cmd = () => {
     const command = _command();
     command.action(async (...args: [...Args, Opts, any]) => {

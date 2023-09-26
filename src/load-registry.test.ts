@@ -6,7 +6,7 @@ import { LoadDescriptor, TransactionData } from './load-descriptor.js';
 describe('load registry tests', () => {
   it('should allow registering no-opts load', () => {
     class Load implements LoadDescriptor {
-      constructor(_opts: { qq: number }) {}
+      constructor(_opts: {}) {}
       getSetupTransaction(
         _account: PublicKey
       ): Promise<TransactionData | undefined> {
