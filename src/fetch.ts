@@ -1,7 +1,7 @@
 // The following code is copied (with minor modifications)
-// from snarkyjs/src/lib/fetch.ts, that is a part of snarkyjs library.
+// from o1js/src/lib/fetch.ts, that is a part of o1js library.
 
-import { Transaction } from 'snarkyjs/dist/node/lib/mina.js';
+import { Transaction } from 'o1js/dist/node/lib/mina.js';
 import { setTimeout } from 'timers';
 import { LOG } from './log.js';
 import {

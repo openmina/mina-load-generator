@@ -1,4 +1,4 @@
-import { SmartContract, method, AccountUpdate } from 'snarkyjs';
+import { SmartContract, method, AccountUpdate } from 'o1js';
 
 /**
  * See https://docs.minaprotocol.com/zkapps/how-to-write-a-zkapp#signing-transactions-and-explicit-account-updates

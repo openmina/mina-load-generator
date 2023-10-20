@@ -6,7 +6,7 @@ import {
   Signature,
   SmartContract,
   UInt64,
-} from 'snarkyjs';
+} from 'o1js';
 
 export class TestToken extends SmartContract {
   deploy(args: DeployArgs) {

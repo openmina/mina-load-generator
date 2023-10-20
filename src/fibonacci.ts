@@ -10,7 +10,7 @@ import {
   SelfProof,
   SmartContract,
   Struct,
-} from 'snarkyjs';
+} from 'o1js';
 import { Logger } from 'tslog';
 import { LoadDescriptor, TransactionData } from './load-descriptor.js';
 import { LoadRegistry } from './load-registry.js';

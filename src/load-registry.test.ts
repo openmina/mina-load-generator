@@ -1,5 +1,5 @@
 import { Command } from '@commander-js/extra-typings';
-import { PublicKey } from 'snarkyjs';
+import { PublicKey } from 'o1js';
 import { LoadRegistry } from './load-registry';
 import { LoadDescriptor, TransactionData } from './load-descriptor.js';
 

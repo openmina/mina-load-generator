@@ -1,4 +1,4 @@
-import { TransactionId } from 'snarkyjs/dist/node/lib/mina.js';
+import { TransactionId } from 'o1js/dist/node/lib/mina.js';
 import { setTimeout } from 'timers/promises';
 import { Logger } from 'tslog';
 import { makeGraphqlRequest } from './fetch.js';

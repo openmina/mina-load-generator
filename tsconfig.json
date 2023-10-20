@@ -20,5 +20,5 @@
     "allowSyntheticDefaultImports": true,
   },
  "include": ["./src"],
- "exclude": ["./snarkyjs"],
+ "exclude": ["./o1js"],
 }

@@ -1,5 +1,5 @@
 import { InvalidArgumentError } from '@commander-js/extra-typings';
-import { PublicKey } from 'snarkyjs';
+import { PublicKey } from 'o1js';
 
 export function myParseMina(value: string, _previous: number) {
   const parsedValue = parseFloat(value);

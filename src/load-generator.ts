@@ -1,10 +1,10 @@
 // import { Command } from '@commander-js/extra-typings';
-import { Mina, PrivateKey, PublicKey } from 'snarkyjs';
-//import { ZkappCommand } from 'snarkyjs/dist/node/lib/account_update.js';
+import { Mina, PrivateKey, PublicKey } from 'o1js';
+//import { ZkappCommand } from 'o1js/dist/node/lib/account_update.js';
 import { Logger } from 'tslog';
 //import { LoadDescriptor, LoadRegistry } from './load-registry.js';
 import { LOG } from './log.js';
-import { TransactionId } from 'snarkyjs/dist/node/lib/mina.js';
+import { TransactionId } from 'o1js/dist/node/lib/mina.js';
 import { TransactionTemplate } from './transaction.js';
 import { AccountSource, fetchAccount } from './accounts-source.js';
 import { TransactionStore } from './transaction-store.js';

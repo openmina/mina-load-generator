@@ -1,6 +1,6 @@
 import { readFile, writeFile } from 'fs/promises';
-import { fetchTransactionStatus } from 'snarkyjs';
-import { TransactionId } from 'snarkyjs/dist/node/lib/mina.js';
+import { fetchTransactionStatus } from 'o1js';
+import { TransactionId } from 'o1js/dist/node/lib/mina.js';
 import { RemoteService } from './remote-access.js';
 
 export interface TransactionIdsStore {

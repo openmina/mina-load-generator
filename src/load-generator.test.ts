@@ -1,4 +1,4 @@
-import { Mina, PublicKey } from 'snarkyjs';
+import { Mina, PublicKey } from 'o1js';
 import {
   AccountSource,
   LocalBlockchainAccountSource,

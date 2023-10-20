@@ -1,5 +1,5 @@
 import { Command } from '@commander-js/extra-typings';
-import { PrivateKey } from 'snarkyjs';
+import { PrivateKey } from 'o1js';
 
 export const generateKeyPair = new Command('generate-keypair')
   .option('-k, --private-key <private-key>', 'Private key')

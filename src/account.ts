@@ -1,4 +1,4 @@
-import { PrivateKey, PublicKey } from 'snarkyjs';
+import { PrivateKey, PublicKey } from 'o1js';
 import { Logger } from 'tslog';
 import { LOG } from './log.js';
 

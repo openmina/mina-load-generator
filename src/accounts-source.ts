@@ -1,4 +1,4 @@
-import { Mina, PrivateKey, PublicKey } from 'snarkyjs';
+import { Mina, PrivateKey, PublicKey } from 'o1js';
 import { Logger } from 'tslog';
 import { makeGraphqlRequest } from './fetch.js';
 import { LOG } from './log.js';
@@ -137,7 +137,7 @@ export class PrivateKeysSource implements AccountSource {
     while (this.index < this.keys.length) {
       const sk = this.keys[this.index++];
       let acc = await fetchAccount(sk.toPublicKey(), this.mina);
-      if (acc.balance >= 1000000 * 1e9 && acc.nonce == acc.inferredNonce) {
+      if (acc.balance >= 10000 * 1e9 && acc.nonce == acc.inferredNonce) {
         return sk;
       }
     }

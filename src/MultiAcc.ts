@@ -5,7 +5,7 @@ import {
   SmartContract,
   UInt64,
   Permissions,
-} from 'snarkyjs';
+} from 'o1js';
 
 export class MultiAcc extends SmartContract {
   init() {
