@@ -1,6 +1,6 @@
 import { Command } from '@commander-js/extra-typings';
-import { isReady, PublicKey, shutdown } from 'snarkyjs';
-import { AccountUpdate, Mina, PrivateKey } from 'snarkyjs';
+import { isReady, PublicKey, shutdown } from 'o1js';
+import { AccountUpdate, Mina, PrivateKey } from 'o1js';
 import { LOG } from './log.js';
 import { myParseInt, myParseMina } from './parse-int.js';
 
@@ -40,7 +40,7 @@ export const testLocalTx = new Command()
   .action(async (opts) => {
     let log = LOG;
     await isReady;
-    log.debug('snarkyjs is ready');
+    log.debug('o1js is ready');
     let localBlockchain = Mina.LocalBlockchain();
     let { amount, fee } = opts;
     let { privateKey: signer, publicKey: sender } =

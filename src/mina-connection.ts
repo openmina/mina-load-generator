@@ -1,4 +1,4 @@
-import { fetchAccount, Mina, PublicKey, Types } from 'snarkyjs';
+import { fetchAccount, Mina, PublicKey, Types } from 'o1js';
 import { NodesSource } from './nodes-source.js';
 import { Logger } from 'tslog';
 import { LOG } from './log.js';

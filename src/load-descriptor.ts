@@ -1,6 +1,6 @@
-import { PrivateKey, PublicKey } from 'snarkyjs';
+import { PrivateKey, PublicKey } from 'o1js';
 
-//import { ZkappCommand } from 'snarkyjs/dist/node/lib/account_update.js';
+//import { ZkappCommand } from 'o1js/dist/node/lib/account_update.js';
 export type TransactionBody = () => void;
 export type TransactionData = {
   body: TransactionBody;

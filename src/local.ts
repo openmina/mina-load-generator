@@ -9,7 +9,7 @@ import {
   FileTransactionIdsStore,
   transactionIdsStore,
 } from './transaction-ids-store.js';
-import { isReady, shutdown } from 'snarkyjs';
+import { isReady, shutdown } from 'o1js';
 
 import * as dotenv from 'dotenv';
 import { nodesSource } from './nodes-source.js';

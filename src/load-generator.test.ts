@@ -1,4 +1,4 @@
-import { isReady, Mina, PublicKey, shutdown } from 'snarkyjs';
+import { isReady, Mina, PublicKey, shutdown } from 'o1js';
 import {
   AccountSource,
   LocalBlockchainAccountSource,

@@ -1,4 +1,4 @@
-import { fetchAccount, Mina, PrivateKey, PublicKey, Types } from 'snarkyjs';
+import { fetchAccount, Mina, PrivateKey, PublicKey, Types } from 'o1js';
 import { RemoteService } from './remote-access.js';
 
 export interface AccountSource {

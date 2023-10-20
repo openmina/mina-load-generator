@@ -6,7 +6,7 @@ import {
   PublicKey,
   Signature,
   UInt64,
-} from 'snarkyjs';
+} from 'o1js';
 import { Logger } from 'tslog';
 import { Account } from './account.js';
 import { LoadDescriptor, TransactionData } from './load-descriptor.js';

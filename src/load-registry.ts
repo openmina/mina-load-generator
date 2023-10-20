@@ -1,5 +1,5 @@
 import { Command, OptionValues } from '@commander-js/extra-typings';
-import { isReady, shutdown } from 'snarkyjs';
+import { isReady, shutdown } from 'o1js';
 import { LoadDescriptor } from './load-descriptor.js';
 
 type Ctor<A extends LoadDescriptor, Opts> = new (opts: Opts) => A;

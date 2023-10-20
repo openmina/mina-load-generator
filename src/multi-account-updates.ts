@@ -1,5 +1,5 @@
 import { Command } from '@commander-js/extra-typings';
-import { AccountUpdate, PrivateKey, PublicKey, UInt64 } from 'snarkyjs';
+import { AccountUpdate, PrivateKey, PublicKey, UInt64 } from 'o1js';
 import { Logger } from 'tslog';
 import { LoadDescriptor, TransactionData } from './load-descriptor.js';
 import { LoadRegistry } from './load-registry.js';

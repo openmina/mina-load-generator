@@ -1,4 +1,4 @@
-import { Field, Mina, PrivateKey, PublicKey, Types, UInt32 } from 'snarkyjs';
+import { Field, Mina, PrivateKey, PublicKey, Types, UInt32 } from 'o1js';
 
 type Transaction = Mina.Transaction;
 type Stored = Types.Json.ZkappCommand;

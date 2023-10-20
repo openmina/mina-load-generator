@@ -8,7 +8,7 @@ import {
   PublicKey,
   AccountUpdate,
   UInt64,
-} from 'snarkyjs';
+} from 'o1js';
 
 /*
  * This file specifies how to test the `MultiAcc` example smart contract. It is safe to delete this file and replace
