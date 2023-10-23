@@ -27,6 +27,8 @@ export interface SendConfig {
    * If set, transactions will be sent using this period only after all of them are generated.
    * Otherwise, a transaction is sent as it is generated */
   readonly interval?: number;
+
+  readonly rotateNodes?: boolean;
 }
 
 const WAIT_MAX_RETRIES = 6;
@@ -204,7 +206,7 @@ export class LoadGenerator {
   async sendAll(
     txStore: TransactionStore,
     idsStore: TransactionIdsStore | undefined,
-    { count, duration, interval }: SendConfig
+    { count, duration, interval, rotateNodes }: SendConfig
   ): Promise<void> {
     const ttx = await txStore.getTransaction();
     this.log.info(
@@ -229,6 +231,9 @@ export class LoadGenerator {
       if (await Promise.any([wait, end])) {
         this.log.info(`duration timeout is reached`);
         break;
+      }
+      if (rotateNodes) {
+        this.mina.nextNode();
       }
     }
   }

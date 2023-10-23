@@ -47,6 +47,11 @@ const nodesOption = () =>
     'graphql endpoints to access Mina nodes'
   ).default(defaultNodes());
 
+const rotateNodesOption = () =>
+  new Option('--rotate-nodes', 'rotate between graphql endpoints').default(
+    false
+  );
+
 const keysOption = () =>
   new Option(
     '-k, --keys <private-key...>',
@@ -87,6 +92,7 @@ export const runCommand = new Command()
   )
   .addOption(keysOption())
   .addOption(nodesOption())
+  .addOption(rotateNodesOption())
   .addOption(countOption())
   .addOption(durationOption())
   .addOption(infiniteOption())
@@ -94,7 +100,8 @@ export const runCommand = new Command()
   .addOption(noWaitOption());
 
 LoadRegistry.registerLoadCommand(runCommand, async (opts, load, _name) => {
-  const { keys, nodes, count, duration, infinite, period, wait } = opts;
+  const { keys, nodes, rotateNodes, count, duration, infinite, period, wait } =
+    opts;
 
   const mina = await MinaBlockchainConnection.create(nodesSource(nodes));
   const accounts = new PrivateKeysSource(keys, mina);
@@ -109,6 +116,7 @@ LoadRegistry.registerLoadCommand(runCommand, async (opts, load, _name) => {
     count: infinite || duration ? undefined : count,
     duration,
     interval: period,
+    rotateNodes,
   });
   if (wait) {
     await loadGen.waitAll(idsStore, {});
