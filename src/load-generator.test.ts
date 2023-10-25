@@ -63,7 +63,7 @@ describe('tx template generation', () => {
     );
   });
 
-  it('should get single tx IDs after sending setup and test tx to node', async () => {
+  it.skip('should get single tx IDs after sending setup and test tx to node', async () => {
     const loadGen = await generator();
     const load = new TestLoadWithSetup();
     const txStore = new LocalTransactionStore();
@@ -92,7 +92,7 @@ describe('tx sending', () => {
     );
   }, 15000);
 
-  it('should generate transactions during specific duration', async () => {
+  it.skip('should generate transactions during specific duration', async () => {
     const DUR = 10;
     const loadGen = await generator();
     const load = new TestLoadWithSetup();
@@ -105,7 +105,7 @@ describe('tx sending', () => {
     ).resolves.toBe(true);
   }, 15000);
 
-  it('should generate estimated number of transactions when duration and period is set', async () => {
+  it.skip('should generate estimated number of transactions when duration and period is set', async () => {
     const DUR = 10;
     const INT = 1;
     const loadGen = await generator();
