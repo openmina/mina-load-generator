@@ -31,7 +31,6 @@ jobs:
 
   docker:
     runs-on: ubuntu-latest
-    needs: [test]
     steps:
       -
         name: Set up QEMU
@@ -52,11 +51,11 @@ jobs:
         with:
           # list of Docker images to use as base name for tags
           images: |
-            akoptelov/mina-load-generator
+            openmina/mina-load-generator
           # generate Docker tags based on the following events/attributes
           tags: |
-            type=sha,format=short
-            latest
+            type=sha,format=short,prefix={{branch}}-
+            type=raw,value={{branch}}
       -
         name: Build and push
         uses: docker/build-push-action@v4
