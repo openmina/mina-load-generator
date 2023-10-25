@@ -28,7 +28,11 @@ export interface SendConfig {
    * Otherwise, a transaction is sent as it is generated */
   readonly interval?: number;
 
+  readonly packSize?: number;
+
   readonly rotateNodes?: boolean;
+
+  readonly rotateSenders?: boolean;
 }
 
 const WAIT_MAX_RETRIES = 6;
@@ -46,6 +50,7 @@ export interface WaitConfig {
 export class LoadGenerator {
   mina: MinaConnection;
   accounts: AccountSource;
+  accountList: PrivateKey[] = [];
   bcTransactions: TransactionsAccess;
   log: Logger<any>;
   nonce?: number;
@@ -88,29 +93,37 @@ export class LoadGenerator {
     load: LoadDescriptor,
     txStore: TransactionStore
   ): Promise<void> {
-    const account = await this.accounts.getPrivateKey();
-    const publicKey = account.toPublicKey();
-    await load.getSetupTransaction(publicKey).then(async (r) => {
-      if (r === undefined) return;
-      const { fee, body, signers } = r;
-      const ttx = await this.createTransactionTemplate(
-        account,
-        body,
-        fee,
-        signers
-      );
-      await this.setup(ttx);
-    });
-    await load.getTransaction(publicKey).then(async (r) => {
-      const { fee, body, signers } = r;
-      const ttx = await this.createTransactionTemplate(
-        account,
-        body,
-        fee,
-        signers
-      );
-      await txStore.setTransaction(ttx);
-    });
+    while (true) {
+      let account: PrivateKey;
+      try {
+        account = await this.accounts.getPrivateKey();
+        this.accountList.push(account);
+      } catch (Error) {
+        return;
+      }
+      const publicKey = account.toPublicKey();
+      await load.getSetupTransaction(publicKey).then(async (r) => {
+        if (r === undefined) return;
+        const { fee, body, signers } = r;
+        const ttx = await this.createTransactionTemplate(
+          account,
+          body,
+          fee,
+          signers
+        );
+        await this.setup(ttx);
+      });
+      await load.getTransaction(publicKey).then(async (r) => {
+        const { fee, body, signers } = r;
+        const ttx = await this.createTransactionTemplate(
+          account,
+          body,
+          fee,
+          signers
+        );
+        await txStore.setTransaction(ttx);
+      });
+    }
   }
 
   async setup(ttx: TransactionTemplate): Promise<void> {
@@ -206,16 +219,25 @@ export class LoadGenerator {
   async sendAll(
     txStore: TransactionStore,
     idsStore: TransactionIdsStore | undefined,
-    { count, duration, interval, rotateNodes }: SendConfig
+    {
+      count,
+      packSize = 1,
+      duration,
+      interval = 0,
+      rotateNodes = false,
+      rotateSenders = false,
+    }: SendConfig
   ): Promise<void> {
-    const ttx = await txStore.getTransaction();
-    this.log.info(
-      `sending transactions using ${ttx
-        .getFeePayer()
-        .toBase58()} as a fee payer/signer`
-    );
+    let senderIndex = 0;
+    let sender = this.accountList[senderIndex];
+    let ttx = await txStore.getTransaction(sender.toPublicKey());
     const acc = await fetchAccount(ttx.getFeePayer(), this.mina);
     this.nonce = acc.inferredNonce;
+    this.log.info(
+      `sending transactions using ${ttx.getFeePayer().toBase58()} with nonce ${
+        this.nonce
+      } as a fee payer/signer`
+    );
     let i = 0;
     let end =
       duration !== undefined
@@ -223,17 +245,31 @@ export class LoadGenerator {
         : new Promise(() => {});
     while (!count || i < count) {
       let wait = setTimeout((interval || 0) * 1000, false);
-      this.log.info(`sending tx #${i}...`);
-      const id = await this.send(ttx, this.nonce);
-      this.log.info(`tx #${i} is sent, hash is ${id.hash()}`);
-      i++;
-      if (idsStore !== undefined) await idsStore.addTransactionId(id);
+      for (let pc = 0; pc < packSize; pc++) {
+        this.log.info(`sending tx #${i}...`);
+        const id = await this.send(ttx, this.nonce);
+        this.log.info(`tx #${i} is sent, hash is ${id.hash()}`);
+        i++;
+        if (idsStore !== undefined) await idsStore.addTransactionId(id);
+      }
       if (await Promise.any([wait, end])) {
         this.log.info(`duration timeout is reached`);
         break;
       }
       if (rotateNodes) {
         this.mina.nextNode();
+      }
+      if (rotateSenders) {
+        senderIndex = (senderIndex + 1) % this.accountList.length;
+        let sender = this.accountList[senderIndex];
+        ttx = await txStore.getTransaction(sender.toPublicKey());
+        const acc = await fetchAccount(ttx.getFeePayer(), this.mina);
+        this.nonce = acc.inferredNonce;
+        this.log.info(
+          `sending transactions using ${ttx
+            .getFeePayer()
+            .toBase58()} with nonce ${this.nonce} as a fee payer/signer`
+        );
       }
     }
   }

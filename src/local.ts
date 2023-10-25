@@ -58,8 +58,21 @@ const keysOption = () =>
     'private keys of existing accounts'
   ).makeOptionMandatory();
 
+const rotateKeysOption = () =>
+  new Option('--rotate-keys', 'switch between fee payer accounts').default(
+    false
+  );
+
 const countOption = () =>
   new Option('-c, --count <number>', 'count of transactions to send')
+    .default(1)
+    .argParser(myParseInt);
+
+const packOption = () =>
+  new Option(
+    '-p, --pack-size <number>',
+    'count of transactions to send in one pack'
+  )
     .default(1)
     .argParser(myParseInt);
 
@@ -91,17 +104,29 @@ export const runCommand = new Command()
     'generate, send zkApp transactions and wait for them to be included in the chain'
   )
   .addOption(keysOption())
+  .addOption(rotateKeysOption())
   .addOption(nodesOption())
   .addOption(rotateNodesOption())
   .addOption(countOption())
+  .addOption(packOption())
   .addOption(durationOption())
   .addOption(infiniteOption())
   .addOption(periodOption())
   .addOption(noWaitOption());
 
 LoadRegistry.registerLoadCommand(runCommand, async (opts, load, _name) => {
-  const { keys, nodes, rotateNodes, count, duration, infinite, period, wait } =
-    opts;
+  const {
+    keys,
+    rotateKeys,
+    nodes,
+    rotateNodes,
+    count,
+    packSize,
+    duration,
+    infinite,
+    period,
+    wait,
+  } = opts;
 
   const mina = await MinaBlockchainConnection.create(nodesSource(nodes));
   const accounts = new PrivateKeysSource(keys, mina);
@@ -114,8 +139,10 @@ LoadRegistry.registerLoadCommand(runCommand, async (opts, load, _name) => {
 
   await loadGen.sendAll(txStore, idsStore, {
     count: infinite || duration ? undefined : count,
+    packSize,
     duration,
     interval: period,
+    rotateSenders: rotateKeys,
     rotateNodes,
   });
   if (wait) {
