@@ -89,9 +89,39 @@ export class LoadGenerator {
     return TransactionTemplate.fromMina(tx, [...(signers || []), account]);
   }
 
+  async generateTemplate(
+    load: LoadDescriptor,
+    txStore: TransactionStore,
+    account: PrivateKey
+  ): Promise<void> {
+    const publicKey = account.toPublicKey();
+    await load.getSetupTransaction(publicKey).then(async (r) => {
+      if (r === undefined) return;
+      const { fee, body, signers } = r;
+      const ttx = await this.createTransactionTemplate(
+        account,
+        body,
+        fee,
+        signers
+      );
+      await this.setup(ttx);
+    });
+    await load.getTransaction(publicKey).then(async (r) => {
+      const { fee, body, signers } = r;
+      const ttx = await this.createTransactionTemplate(
+        account,
+        body,
+        fee,
+        signers
+      );
+      await txStore.setTransaction(ttx);
+    });
+  }
+
   async generate(
     load: LoadDescriptor,
-    txStore: TransactionStore
+    txStore: TransactionStore,
+    allAccounts?: boolean
   ): Promise<void> {
     while (true) {
       let account: PrivateKey;
@@ -101,28 +131,10 @@ export class LoadGenerator {
       } catch (Error) {
         return;
       }
-      const publicKey = account.toPublicKey();
-      await load.getSetupTransaction(publicKey).then(async (r) => {
-        if (r === undefined) return;
-        const { fee, body, signers } = r;
-        const ttx = await this.createTransactionTemplate(
-          account,
-          body,
-          fee,
-          signers
-        );
-        await this.setup(ttx);
-      });
-      await load.getTransaction(publicKey).then(async (r) => {
-        const { fee, body, signers } = r;
-        const ttx = await this.createTransactionTemplate(
-          account,
-          body,
-          fee,
-          signers
-        );
-        await txStore.setTransaction(ttx);
-      });
+      await this.generateTemplate(load, txStore, account);
+      if (allAccounts === undefined || allAccounts === false) {
+        return;
+      }
     }
   }
 
@@ -228,9 +240,7 @@ export class LoadGenerator {
       rotateSenders = false,
     }: SendConfig
   ): Promise<void> {
-    let senderIndex = 0;
-    let sender = this.accountList[senderIndex];
-    let ttx = await txStore.getTransaction(sender.toPublicKey());
+    let ttx = await txStore.getTransaction();
     const acc = await fetchAccount(ttx.getFeePayer(), this.mina);
     this.nonce = acc.inferredNonce;
     this.log.info(
@@ -260,9 +270,7 @@ export class LoadGenerator {
         this.mina.nextNode();
       }
       if (rotateSenders) {
-        senderIndex = (senderIndex + 1) % this.accountList.length;
-        let sender = this.accountList[senderIndex];
-        ttx = await txStore.getTransaction(sender.toPublicKey());
+        ttx = await txStore.getTransaction();
         const acc = await fetchAccount(ttx.getFeePayer(), this.mina);
         this.nonce = acc.inferredNonce;
         this.log.info(

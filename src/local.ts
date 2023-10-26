@@ -135,7 +135,7 @@ LoadRegistry.registerLoadCommand(runCommand, async (opts, load, _name) => {
 
   const loadGen = new LoadGenerator(mina, accounts);
 
-  await loadGen.generate(load, txStore);
+  await loadGen.generate(load, txStore, true);
 
   await loadGen.sendAll(txStore, idsStore, {
     count: infinite || duration ? undefined : count,

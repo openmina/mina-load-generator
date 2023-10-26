@@ -9,6 +9,7 @@ import { LocalBlockchainConnection } from './mina-connection.js';
 import { LocalTransactionStore } from './transaction-store.js';
 import { LocalTransactionIdsStore } from './transaction-ids-store.js';
 import { setTimeout } from 'timers/promises';
+import { LOG } from './log.js';
 
 class TestLoad implements LoadDescriptor {
   getSetupTransaction(
@@ -38,7 +39,9 @@ class TestLoadWithSetup implements LoadDescriptor {
   }
 }
 
-beforeEach(() => async () => {});
+beforeAll(() => {
+  LOG.settings.minLevel = 4;
+});
 
 async function generator() {
   const localBlockchain = Mina.LocalBlockchain();
@@ -63,7 +66,7 @@ describe('tx template generation', () => {
     );
   });
 
-  it.skip('should get single tx IDs after sending setup and test tx to node', async () => {
+  it('should get single tx IDs after sending setup and test tx to node', async () => {
     const loadGen = await generator();
     const load = new TestLoadWithSetup();
     const txStore = new LocalTransactionStore();
@@ -92,7 +95,7 @@ describe('tx sending', () => {
     );
   }, 15000);
 
-  it.skip('should generate transactions during specific duration', async () => {
+  it('should generate transactions during specific duration', async () => {
     const DUR = 10;
     const loadGen = await generator();
     const load = new TestLoadWithSetup();
@@ -105,7 +108,7 @@ describe('tx sending', () => {
     ).resolves.toBe(true);
   }, 15000);
 
-  it.skip('should generate estimated number of transactions when duration and period is set', async () => {
+  it('should generate estimated number of transactions when duration and period is set', async () => {
     const DUR = 10;
     const INT = 1;
     const loadGen = await generator();
