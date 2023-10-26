@@ -128,20 +128,25 @@ export class PrivateKeysSource implements AccountSource {
     this.log = LOG.getSubLogger({ name: 'acc-src' });
   }
   async getPrivateKey(): Promise<PrivateKey> {
-    if (this.mina === undefined) {
-      if (this.index >= this.keys.length) {
-        throw new Error('no more accounts');
-      }
-      return this.keys[this.index++];
+    // if (this.mina === undefined) {
+    if (this.index >= this.keys.length) {
+      throw new Error('no more accounts');
     }
-    while (this.index < this.keys.length) {
-      const sk = this.keys[this.index++];
-      let acc = await fetchAccount(sk.toPublicKey(), this.mina);
-      if (acc.balance >= 10000 * 1e9 && acc.nonce == acc.inferredNonce) {
-        return sk;
-      }
-    }
-    throw new Error('no more accounts');
+    return this.keys[this.index++];
+    // }
+    // while (this.index < this.keys.length) {
+    //   const sk = this.keys[this.index];
+    //   try {
+    //     let acc = await fetchAccount(sk.toPublicKey(), this.mina);
+    //     if (acc.balance >= 10000 * 1e9 && acc.nonce == acc.inferredNonce) {
+    //       this.index++;
+    //       return sk;
+    //     }
+    //   } catch (e) {
+    //     this.mina.nextNode();
+    //   }
+    // }
+    // throw new Error('no more accounts');
   }
   // getKey(account: PublicKey): Promise<PrivateKey> {
   //     const key = this.keys.find(key => key.toPublicKey() == account);
