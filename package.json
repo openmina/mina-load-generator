@@ -23,7 +23,7 @@
     "testw": "node --experimental-vm-modules --experimental-wasm-modules --experimental-wasm-threads node_modules/jest/bin/jest.js --watch",
     "lint": "npx eslint src/* --fix",
     "inspect": "node --loader ts-node/esm --inspect src/main.ts",
-    "main": "ts-node-esm src/main.ts"
+    "main": "node --no-warnings=ExperimentalWarning --loader ts-node/esm src/main.ts"
   },
   "lint-staged": {
     "src/**/*.ts": [
