@@ -6,7 +6,7 @@ export function myParseMina(value: string, _previous: number) {
   if (isNaN(parsedValue)) {
     throw new InvalidArgumentError('Not a number.');
   }
-  return parsedValue * 1e9;
+  return parsedValue;
 }
 
 export function myParseInt(value: string, _previous: number) {

@@ -35,7 +35,7 @@ function accounts() {
 function amount() {
   return new Option('-a, --amount <mina>', 'amount to transfer')
     .argParser(myParseMina)
-    .default(10e9);
+    .default(1);
 }
 
 function initialAmount() {
@@ -44,13 +44,13 @@ function initialAmount() {
     'inital amount to fund zkapp account with'
   )
     .argParser(myParseMina)
-    .default(1000e9);
+    .default(1000);
 }
 
 function fee() {
   return new Option('-f, --fee <mina>', 'amount of fee')
     .argParser(myParseMina)
-    .default(1e9);
+    .default(0.025);
 }
 
 function simpleCommand(
@@ -88,8 +88,8 @@ abstract class MultiAccTrans implements LoadDescriptor {
   constructor(accounts: PublicKey[], opts: SimpleOpts) {
     this.log = LOG.getSubLogger({ name: 'matp' });
     this.accounts = accounts;
-    this.amount = opts.amount;
-    this.fee = opts.fee;
+    this.amount = opts.amount * 1e9;
+    this.fee = opts.fee * 1e9;
 
     this.log.debug('accounts:', this.accounts.map(PublicKey.toBase58));
     this.log.debug('amount', this.amount);
@@ -128,7 +128,7 @@ abstract class MultiAccWithZkApp extends MultiAccTrans {
 
     this.zkKey = PrivateKey.random();
     this.zk = new MultiAcc(this.zkKey.toPublicKey());
-    this.initialAmount = opts.initialAmount;
+    this.initialAmount = opts.initialAmount * 1e9;
 
     this.log.info(`zkApp public key: ${this.zkKey.toPublicKey().toBase58()}`);
     this.log.debug(`zkApp private key: ${this.zkKey.toBase58()}`);
