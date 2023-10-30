@@ -1,0 +1,17 @@
+apiVersion: batch/v1
+metadata:
+  name: {{ include "runner.fullname" . }}
+  labels:
+    {{- include "runner.labels" . | nindent 4 }}
+{{ if .Values.schedule }}
+kind: CronJob
+spec:
+  schedule: {{ .Values.schedule | quote}}
+  jobTemplate:
+    spec:
+      {{ include "runner.jobSpec" . | indent 6 }}
+{{ else }}
+kind: Job
+spec:
+  {{ include "runner.jobSpec" . | indent 2 }}
+{{ end }}

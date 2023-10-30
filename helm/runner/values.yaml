@@ -1,0 +1,103 @@
+# Default values for runner.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+load:
+  name: simple1
+  args:
+    - B62qrJKtrMJCFDaYTqaxpY5KU1XuwSiL1ZtWteNFKxsmW9xZzG3cYX2
+
+send:
+  duration: 1h
+  period: 3m
+  packSize: 120
+  wait: false
+
+network:
+  nodes:
+    - http://prod1-graphql/graphql
+    - http://prod2-graphql/graphql
+    - http://prod3-graphql/graphql
+    - http://prod4-graphql/graphql
+    - http://prod5-graphql/graphql
+    - http://prod6-graphql/graphql
+    - http://prod7-graphql/graphql
+    - http://prod8-graphql/graphql
+    - http://prod9-graphql/graphql
+    - http://prod10-graphql/graphql
+  rotateNodes: true
+  senders:
+    - EKEEpMELfQkMbJDt2fB4cFXKwSf1x4t7YD4twREy5yuJ84HBZtF9
+    - EKEFi6hzC6F3H6gsDMF271ZUGg59cFxEhaWcdd3JazWbgf414T9K
+    - EKFDW1oR4xquffCrJdqduYavmMG8KS8EeHWV2kDipvEJiVi9b5oK
+    - EKEcgHvJouecpGztiGRjXP5ftY1kpXJ3YmzHSsZA8cs2gB88qhfD
+    - EKELeJwj9QPxGdwvsjAxmKXvYY2pUaEVE8Eufg5e8LoKCzTBNZNh
+    - EKDvKUAwhdKjeqU4wWD8PNrQNaVBiVGhcpMFeZkFRjsSNiHLppyN
+    - EKFbTQSagw6vVaZyGWGZUE6GKKfMG8QTX5xoPPnXSeWhe2uaCCTD
+    - EKDhaEurqVTbuGRqrVe2SYZwrsnaQewLCQQS5PitEAdXxcG6vB2i
+    - EKE9TGDciVh6v7Dj8L8kN5pCXVbQ193i75UGpyxcvRB39rQBQuGd
+    - EKEUvmfp8QdpKYhg6xmjwGyZuJSU5RJ8kihM39F63bwao3tL3dXi
+    - EKDz57VhBK6ZJyN86SrLsAi26chMwWB6qRfWQi6ehSyX5mV4XcRP
+    - EKF3qyZ7eoZZhnGoWsGW6bpv8rE3mZmrUtyMWAotJX7ZiLympqhH
+    - EKDhDVFBWE6byqmutWvWDmr7BxjF6F89LJgGXMicpqPmgNUMdqV9
+    - EKDuTuazTB8eXSqiaCVsmiPt21XEsjJzbf8uAxhF4BnEfBxs2Tzi
+    - EKEkphbBgedVTuMjvLoL3Rd7bxophyZupnVVvH9hWEBvjbKBm992
+    - EKEmCf5ZPjGxuNFk3hGhuUj5CzoDvZjfAYvL3PzGfdBCU7P2PSh9
+    - EKEkZjv28vD7ouBpj3TKiTtsoegZttHh7sSiHZfGPZCH3BwhZAHF
+    - EKDva5cGdW71kKfKk55NeKXstc13mY1FSd5QGTkoRcDtRWoNuw5z
+    - EKF4iyBxcRxLcJZLodR5EidWZA44UWEmjKNDFnf3Ekv86VguQPFu
+    - EKEQZ9iB3zX4HjH4V4BBBYtKAYU6KRg5E2zJHN1Y2SakJVXMHoy3
+  rotateSenders: true
+
+replicaCount: 1
+
+image:
+  repository: openmina/mina-load-generator
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: "main"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+podAnnotations: {}
+podLabels: {}
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+# Additional volumes on the output Deployment definition.
+volumes: []
+# - name: foo
+#   secret:
+#     secretName: mysecret
+#     optional: false
+
+# Additional volumeMounts on the output Deployment definition.
+volumeMounts: []
+# - name: foo
+#   mountPath: "/etc/foo"
+#   readOnly: true
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
