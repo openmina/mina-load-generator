@@ -32,9 +32,18 @@ template:
 
 {{ define "runner.sendArgs" }}
 {{ with .Values.send }}
-"--duration", "{{ .duration }}",
-"--period", "{{ .period }}",
-"--pack-size", "{{ .packSize }}",
+{{ with .duration }}
+"--duration", "{{ . }}",
+{{ end }}
+{{ with .period }}
+"--period", "{{ . }}",
+{{ end }}
+{{ with .packSize }}
+"--pack-size", "{{ . }}",
+{{ end }}
+{{ with .count }}
+"--count", "{{ . }}",
+{{ end }}
 {{- if .wait }}"--wait"{{ else }}"--no-wait"{{ end }},
 {{ end }}
 {{ end }}
