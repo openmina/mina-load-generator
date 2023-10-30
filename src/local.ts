@@ -112,6 +112,10 @@ export const runCommand = new Command()
   .addOption(durationOption())
   .addOption(infiniteOption())
   .addOption(periodOption())
+  .option(
+    '--dump-tx-ids <file>',
+    'dump transaction ids into the specified file upon completion'
+  )
   .addOption(noWaitOption());
 
 LoadRegistry.registerLoadCommand(runCommand, async (opts, load, _name) => {
@@ -125,13 +129,14 @@ LoadRegistry.registerLoadCommand(runCommand, async (opts, load, _name) => {
     duration,
     infinite,
     period,
+    dumpTxIds,
     wait,
   } = opts;
 
   const mina = await MinaBlockchainConnection.create(nodesSource(nodes));
   const accounts = new PrivateKeysSource(keys, mina);
   const txStore = transactionStore();
-  const idsStore = await transactionIdsStore();
+  const idsStore = await FileTransactionIdsStore.create();
 
   const loadGen = new LoadGenerator(mina, accounts);
 
@@ -145,6 +150,9 @@ LoadRegistry.registerLoadCommand(runCommand, async (opts, load, _name) => {
     rotateSenders: rotateKeys,
     rotateNodes,
   });
+  if (dumpTxIds !== undefined) {
+    idsStore.commit(dumpTxIds);
+  }
   if (wait) {
     await loadGen.waitAll(idsStore, {});
   }

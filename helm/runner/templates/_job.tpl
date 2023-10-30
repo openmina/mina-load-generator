@@ -3,6 +3,10 @@
 template:
   spec:
     restartPolicy: Never
+    volumes:
+      - name: tmp
+        hostPath:
+          path: /tmp
     containers:
       - name: main
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
@@ -13,6 +17,9 @@ template:
           {{ include "runner.networkArgs" . | indent 10 }}
           {{ include "runner.sendArgs" . | indent 10 }}
         ]
+        volumeMounts:
+          - name: tmp
+            mountPath: /tmp
 {{ end }}
 
 {{ define "runner.loadArgs" }}
