@@ -1,0 +1,17 @@
+{{ if .Values.server.enabled }}
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "{{ include "load-generator.fullname" . }}-test-connection"
+  labels:
+    {{- include "load-generator.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": test
+spec:
+  containers:
+    - name: wget
+      image: busybox
+      command: ['wget']
+      args: ['{{ include "load-generator.fullname" . }}:{{ .Values.service.port }}']
+  restartPolicy: Never
+{{ end }}

@@ -1,0 +1,40 @@
+server:
+  enabled: true
+
+generator:
+  enabled: true
+  load:
+    name: sign-proof-x3
+    args:
+      - B62qrJKtrMJCFDaYTqaxpY5KU1XuwSiL1ZtWteNFKxsmW9xZzG3cYX2
+      - B62qp8iy2kUcn7hJgEaDPdrRXE4KQ59vz6shpUT4cmrhhKUDvvrkKZL
+      - B62qpPita1s7Dbnr7MVb3UK8fdssZixL1a4536aeMYxbTJEtRGGyS8U
+      - --fee
+      - 0.03
+
+nodes:
+  - http://node1-graphql/graphql
+  - http://node2-graphql/graphql
+  - http://node3-graphql/graphql
+  - http://node4-graphql/graphql
+  - http://node5-graphql/graphql
+  - http://node6-graphql/graphql
+  - http://node7-graphql/graphql
+  - http://node8-graphql/graphql
+accounts:
+  - EKEaMHPP8Uvsh8YLUY5hcjH4LWgEdgA81XyHd68bi6JUccLdcDos
+  - EKDrdLGqVTE4fcSVtziPeTQvkoR2bBYT64Gg4aBksYd9eM157nFM
+  - EKFNS4JNz9zyk9uVdkRVxDx71dRPYwyaVqqD2fEZ3QjiYQ8HJcLC
+  - EKFR1ZM7pGi9aXTu5qxPmCB3NdcyYzRAUz8YQNJ2ME26EGy1gCrv
+  - EKDwUyhB57p8mT4MhDovjACunp2T5uVzMwSBXozcKTqeb1U4K4hr
+  - EKDhn82PB9rsbBW4supwuEukNRGbKqWEq8esR9vJ2AcZf82cnNyn
+  - EKEuzPUtX8xTbtU32QMHzeikXUfRmtjh1njGrwK2sxSmAkfmqEHf
+  - EKEo5cRM5tAFaagy3giThsLkzLrx2sJHvmPStnBaaEQW1WBjUU1X
+  # - EKE2w9n1ZpEZ8kiWjdL6iTQJiUTPHCBjRTVmjAoy1aEh8F5QvtuD
+  # - EKE3Qde1NXCuRv3MQEKiXUQUnu53GrpSg7bx4FyWPGW7V2h4sc7q
+  # - EKEGbjJ8ZKZadjgfiEaxmbbhXyZ7mmua6yhbFD1FjK9udW6RPVB6
+  # - EKDhVdBTX3Ywi5gnZ5varFGSf6MNiLiGkjHYyNci4pHKniuCYh29
+  # - EKEtApvWXWP24tYdnnkrWEpiEXi8jM9EJ9oyoL38BR2h3Guo2u2U
+  # - EKERdDHh6xnX2VBzNpRgMnpgXbxfxvsrRkCmGfa2VePjZwcyzNka
+  # - EKDq7AdisPoHNG3GSn34XHqKQDKhsszwygtmwbgjxzFHkd2aiGFQ
+  # - EKE5WXywUNqyPoNpU8D9682z6fxcnUdDMQaQN4x6K1wmC8sYXWa1

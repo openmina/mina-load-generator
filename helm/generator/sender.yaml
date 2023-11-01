@@ -1,0 +1,8 @@
+send:
+  enabled: true
+  count: 1
+  period: 1m
+  packSize: 16
+  rotateAccounts: true
+
+remote: test-load-generator-server:80

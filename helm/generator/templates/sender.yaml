@@ -1,0 +1,19 @@
+{{ if .Values.send.enabled }}
+apiVersion: batch/v1
+metadata:
+  name: {{ include "load-generator.fullname" . }}-{{ randAlpha 5 | lower }}
+  labels:
+    {{- include "load-generator.labels" . | nindent 4 }}
+{{ if .Values.schedule }}
+kind: CronJob
+spec:
+  schedule: {{ .Values.send.schedule | quote}}
+  jobTemplate:
+    spec:
+      {{ include "load-generator.sendJobSpec" . | indent 6 }}
+{{ else }}
+kind: Job
+spec:
+  {{ include "load-generator.sendJobSpec" . | indent 2 }}
+{{ end }}
+{{ end }}
