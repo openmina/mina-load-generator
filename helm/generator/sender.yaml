@@ -5,4 +5,4 @@ send:
   packSize: 16
   rotateAccounts: true
 
-remote: test-load-generator-server:80
+remote: tx-server-load-generator-server:80
