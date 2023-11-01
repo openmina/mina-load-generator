@@ -16,6 +16,7 @@ template:
           {{ include "runner.loadArgs" . | indent 10 }}
           {{ include "runner.networkArgs" . | indent 10 }}
           {{ include "runner.sendArgs" . | indent 10 }}
+          "--dump-tx-ids", "/tmp/tx-ids-{{ randAlphaNum 5 }}.json",
         ]
         volumeMounts:
           - name: tmp

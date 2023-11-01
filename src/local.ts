@@ -17,8 +17,9 @@ import {
 
 import * as dotenv from 'dotenv';
 import { nodesSource } from './nodes-source.js';
-import { BlockchainTransactions } from './blockchain-transactions.js';
 import timestring from 'timestring';
+import { LOG } from './log.js';
+import { addHandler as addSigintHandler } from './ctrlc.js';
 
 dotenv.config();
 
@@ -119,6 +120,7 @@ export const runCommand = new Command()
   .addOption(noWaitOption());
 
 LoadRegistry.registerLoadCommand(runCommand, async (opts, load, _name) => {
+  let log = LOG.getSubLogger({ name: 'run' });
   const {
     keys,
     rotateKeys,
@@ -140,8 +142,21 @@ LoadRegistry.registerLoadCommand(runCommand, async (opts, load, _name) => {
 
   const loadGen = new LoadGenerator(mina, accounts);
 
+  const dumpTxIdsFn = async () => {
+    if (dumpTxIds !== undefined) {
+      log.info(`saving transaction ids to ${dumpTxIds}`);
+      await idsStore.commit(dumpTxIds);
+    }
+  };
   await loadGen.generate(load, txStore, true);
 
+  // dump sent transaction ids on interrupt
+  let intHandler = async () => {
+    await dumpTxIdsFn();
+  };
+  addSigintHandler(async () => {
+    await intHandler();
+  });
   await loadGen.sendAll(txStore, idsStore, {
     count: infinite || duration ? undefined : count,
     packSize,
@@ -150,10 +165,12 @@ LoadRegistry.registerLoadCommand(runCommand, async (opts, load, _name) => {
     rotateSenders: rotateKeys,
     rotateNodes,
   });
-  if (dumpTxIds !== undefined) {
-    idsStore.commit(dumpTxIds);
-  }
+
+  intHandler = async () => {};
+  await dumpTxIdsFn();
+
   if (wait) {
+    log.info(`waiting for transactions...`);
     await loadGen.waitAll(idsStore, {});
   }
 });

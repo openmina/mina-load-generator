@@ -288,7 +288,7 @@ export class LoadGenerator {
   ): Promise<void> {
     const ids = await idsStore.getTransactionIds();
     this.log.info(`waiting for ${ids.length} transactions...`);
-    this.bcTransactions.waitAll(ids);
+    await this.bcTransactions.waitAll(ids);
   }
 }
 
