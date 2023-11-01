@@ -12,12 +12,19 @@ export class DataServer {
 
   txs: any[] = [];
   txIds: any[] = [];
+  cycleTransactions: boolean;
 
   log: Logger<any>;
 
-  constructor(nodes: string[], accounts: string[], log: Logger<any>) {
+  constructor(
+    nodes: string[],
+    accounts: string[],
+    cycleTransactions: boolean,
+    log: Logger<any>
+  ) {
     this.nodes = nodes;
     this.accounts = accounts;
+    this.cycleTransactions = cycleTransactions;
     this.log = log;
     log.debug(`${nodes.length} nodes, ${accounts.length} accounts`);
   }
@@ -41,31 +48,40 @@ export class DataServer {
     });
 
     app.get('/account', (_req, res) => {
-      if (this.accounts.length == 0) {
+      let tx = this.accounts.shift();
+      if (tx === undefined) {
         this.log.warn('no more accounts');
         res.status(404).json('no more accounts');
         return;
       }
-      res.json(this.accounts.shift());
       this.log.debug('accounts left:', this.accounts.length);
+      res.json(tx);
     });
 
-    app.post('/transaction', express.json({ strict: false }), (req, res) => {
-      this.log.debug('received transaction');
-      this.log.trace('transaction:', req.body);
-      this.txs.push(req.body);
-      res.status(200).json(null);
-      this.log.debug('transaction templates count:', this.txs.length);
-    });
+    app.post(
+      '/transaction',
+      express.json({ limit: '10Mb', strict: false }),
+      (req, res) => {
+        this.log.debug('received transaction');
+        this.log.trace('transaction:', req.body);
+        this.txs.push(req.body);
+        res.status(200).json(null);
+        this.log.debug('transaction templates count:', this.txs.length);
+      }
+    );
     app.get('/transaction', (_req, res) => {
-      if (this.txs.length === 0) {
+      const tx = this.txs.shift();
+      if (tx === undefined) {
         this.log.warn('no transaction templates');
         res.status(404).json('no transaction templates');
         return;
       }
-      const tx = this.txs.shift();
+      if (this.cycleTransactions) {
+        this.txs.push(tx);
+      } else {
+        this.log.debug('transaction templates count:', this.txs.length);
+      }
       res.json(tx).send();
-      this.log.debug('transaction templates count:', this.txs.length);
     });
 
     app.post('/transaction-id', express.json(), (req, res) => {
@@ -141,17 +157,23 @@ export const serverCommand = new Command('server')
     'nodes.json'
   )
   .option(
-    'a, --accounts-file <file>',
+    '-a, --accounts-file <file>',
     'JSON file containing a list of existing private keys',
     'accounts.json'
   )
+  .option('-c, --cycle-transactions', 'cycle throuth transactions', false)
   .action(async (opts) => {
     const log = LOG.getSubLogger({ name: 'srv' });
-    const { port, host, nodesFile, accountsFile } = opts;
+    const { port, host, nodesFile, accountsFile, cycleTransactions } = opts;
     const nodes = getNodes(await readJSON(nodesFile));
     const accounts = getAccounts(await readJSON(accountsFile));
 
-    const app = new DataServer(nodes, accounts, log).createApp();
+    const app = new DataServer(
+      nodes,
+      accounts,
+      cycleTransactions,
+      log
+    ).createApp();
     const server = app.listen(port || 0, host);
     server.on('listening', () => {
       const addr = server.address() as AddressInfo;

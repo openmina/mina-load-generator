@@ -8,7 +8,7 @@ const log = new Logger({ minLevel: 3 });
 describe('/healthcheck function', () => {
   let app: Express;
   beforeEach(() => {
-    app = new DataServer([], [], log).createApp();
+    app = new DataServer([], [], false, log).createApp();
   });
 
   it('should reply OK status', async () => {
@@ -21,7 +21,7 @@ describe('/nodes function', () => {
   const nodes = ['node1', 'node2', 'node3'];
   let app: Express;
   beforeEach(() => {
-    app = new DataServer([...nodes], [], log).createApp();
+    app = new DataServer([...nodes], [], false, log).createApp();
   });
 
   it('should return the list of nodes as the first request', async () => {
@@ -55,9 +55,11 @@ describe('/nodes function', () => {
 
 describe('/accounts', () => {
   const accs = ['account1', 'account2', 'account3'];
+  let dataServer: DataServer;
   let app: Express;
   beforeEach(() => {
-    app = new DataServer([], [...accs], log).createApp();
+    dataServer = new DataServer([], [...accs], false, log);
+    app = dataServer.createApp();
   });
 
   it('should return different accounts in turn', async () => {
@@ -87,9 +89,11 @@ describe('/accounts', () => {
 });
 
 describe('transaction templates storage', () => {
+  let dataServer: DataServer;
   let app: Express;
   beforeEach(() => {
-    app = new DataServer([], [], log).createApp();
+    dataServer = new DataServer([], [], false, log);
+    app = dataServer.createApp();
   });
 
   it('should return transaction template previously added', async () => {
@@ -119,7 +123,7 @@ describe('transaction templates storage', () => {
     // TODO
   });
 
-  it('should return error if no transaction template previously added', async () => {
+  it('should return error if runs out of transactions', async () => {
     const txs = [{ someField: 'some data' }, { someField: 'other data' }];
 
     for (let tx of txs) {
@@ -142,12 +146,52 @@ describe('transaction templates storage', () => {
       .set('Accept', 'application/json');
     expect(get.status).toBe(404);
   });
+
+  it('should cycle through transactions if configured', async () => {
+    dataServer.cycleTransactions = true;
+    const txs = [{ someField: 'some data' }, { someField: 'other data' }];
+
+    for (let tx of txs) {
+      const post = await request(app)
+        .post('/transaction')
+        .set('Accept', 'application/json')
+        .send(tx);
+      expect(post.status).toBe(200);
+    }
+
+    for (let i = 0; i < 2; i++) {
+      for (let _ of txs) {
+        const get = await request(app)
+          .get('/transaction')
+          .set('Accept', 'application/json');
+        expect(get.status).toBe(200);
+      }
+    }
+  });
+  it('should report absence/presense of transactions', async () => {
+    await expect(
+      request(app)
+        .head('/transaction')
+        .then((head) => head.status)
+    ).resolves.toBe(404);
+    await expect(
+      request(app)
+        .post('/transaction')
+        .send({ someField: 'some data' })
+        .then((post) => post.status)
+    ).resolves.toBe(200);
+    await expect(
+      request(app)
+        .head('/transaction')
+        .then((head) => head.status)
+    ).resolves.toBe(200);
+  });
 });
 
 describe('transaction ids storage', () => {
   let app: Express;
   beforeEach(() => {
-    app = new DataServer([], [], log).createApp();
+    app = new DataServer([], [], false, log).createApp();
   });
 
   it('should return transaction ids previously added', async () => {

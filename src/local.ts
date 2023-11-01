@@ -57,7 +57,7 @@ const keysOption = () =>
   new Option(
     '-k, --keys <private-key...>',
     'private keys of existing accounts'
-  ).makeOptionMandatory();
+  );
 
 const rotateKeysOption = () =>
   new Option('--rotate-keys', 'switch between fee payer accounts').default(
@@ -104,7 +104,7 @@ export const runCommand = new Command()
   .description(
     'generate, send zkApp transactions and wait for them to be included in the chain'
   )
-  .addOption(keysOption())
+  .addOption(keysOption().makeOptionMandatory())
   .addOption(rotateKeysOption())
   .addOption(nodesOption())
   .addOption(rotateNodesOption())
@@ -148,7 +148,7 @@ LoadRegistry.registerLoadCommand(runCommand, async (opts, load, _name) => {
       await idsStore.commit(dumpTxIds);
     }
   };
-  await loadGen.generate(load, txStore, true);
+  await loadGen.generate(load, txStore, rotateKeys ? keys.length : undefined);
 
   // dump sent transaction ids on interrupt
   let intHandler = async () => {
@@ -218,13 +218,19 @@ export const sendCommand = new Command()
   .name('send')
   .description('send generated zkApp transactions')
   .addOption(nodesOption())
+  .addOption(rotateKeysOption())
+  .addOption(rotateNodesOption())
   .addOption(countOption())
-  .option('-C, --continuous', 'send transactions continuously')
-  .option(
-    '-I, --interval <millis>',
-    'interval in milliseconds for sending transactions',
-    myParseInt
-  )
+  .addOption(packOption())
+  .addOption(durationOption())
+  .addOption(infiniteOption())
+  .addOption(periodOption())
+  // .option('-C, --continuous', 'send transactions continuously')
+  // .option(
+  //   '-I, --interval <millis>',
+  //   'interval in milliseconds for sending transactions',
+  //   myParseInt
+  // )
   .option('-i, --input <file>', 'file to read transaction template from')
   .option('-o, --output <file>', 'file store transaction IDs')
   .addOption(remoteOption)
@@ -233,9 +239,13 @@ export const sendCommand = new Command()
     async ({
       nodes,
       input,
+      rotateKeys,
+      rotateNodes,
       count,
-      continuous,
-      interval,
+      packSize,
+      duration,
+      infinite,
+      period,
       output,
       remote,
       id,
@@ -244,11 +254,7 @@ export const sendCommand = new Command()
       const accounts = accountSource([], remote, id);
       const txStore = transactionStore(input, remote, id);
       let out = output;
-      if (
-        out === undefined &&
-        input !== undefined &&
-        continuous === undefined
-      ) {
+      if (out === undefined && input !== undefined && infinite !== true) {
         if (input.endsWith(TEMPLATE_SUFFIX)) {
           out =
             input.substring(0, input.length - TEMPLATE_SUFFIX.length) +
@@ -258,13 +264,20 @@ export const sendCommand = new Command()
         }
       }
       const idsStore =
-        continuous === undefined
+        infinite === undefined
           ? await transactionIdsStore(out, remote, id)
           : undefined;
       const mina = await MinaBlockchainConnection.create(nodesSrc);
       const generator = new LoadGenerator(mina, accounts);
 
-      await generator.sendAll(txStore, idsStore, { count, interval });
+      await generator.sendAll(txStore, idsStore, {
+        count: infinite || duration ? undefined : count,
+        packSize,
+        duration,
+        interval: period,
+        rotateSenders: rotateKeys,
+        rotateNodes,
+      });
       if (out !== undefined)
         await (idsStore as FileTransactionIdsStore).commit(out);
     }

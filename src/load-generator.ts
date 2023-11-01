@@ -121,8 +121,9 @@ export class LoadGenerator {
   async generate(
     load: LoadDescriptor,
     txStore: TransactionStore,
-    allAccounts?: boolean
+    accountsNumber?: number
   ): Promise<void> {
+    let accountCounter = 0;
     while (true) {
       let account: PrivateKey;
       try {
@@ -132,7 +133,8 @@ export class LoadGenerator {
         return;
       }
       await this.generateTemplate(load, txStore, account);
-      if (allAccounts === undefined || allAccounts === false) {
+      accountCounter++;
+      if (accountsNumber === undefined || accountCounter >= accountsNumber) {
         return;
       }
     }

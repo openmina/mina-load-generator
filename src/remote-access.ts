@@ -1,5 +1,3 @@
-import fetch from 'node-fetch';
-
 export class RemoteService {
   remoteUrl: URL;
   id?: string;

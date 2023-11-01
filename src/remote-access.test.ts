@@ -8,7 +8,7 @@ let server: Server | undefined;
 let port: number;
 
 beforeEach((done) => {
-  server = new DataServer([], [], new Logger()).createApp().listen();
+  server = new DataServer([], [], false, new Logger()).createApp().listen();
   server.on('listening', () => {
     port = (server?.address() as AddressInfo).port;
     done();
