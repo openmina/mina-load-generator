@@ -16,6 +16,7 @@ generator:
     args: []
 
 send:
+  enabled: false
 
 
 replicaCount: 1
