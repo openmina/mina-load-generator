@@ -10,8 +10,10 @@ generator:
       - B62qrJKtrMJCFDaYTqaxpY5KU1XuwSiL1ZtWteNFKxsmW9xZzG3cYX2
       - B62qp8iy2kUcn7hJgEaDPdrRXE4KQ59vz6shpUT4cmrhhKUDvvrkKZL
       - B62qpPita1s7Dbnr7MVb3UK8fdssZixL1a4536aeMYxbTJEtRGGyS8U
+      - --amount
+      - 0.1
       - --fee
-      - 0.03
+      - 0.025
 
 nodes:
   - http://node1-graphql/graphql

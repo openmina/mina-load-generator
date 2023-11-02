@@ -1,8 +1,8 @@
 send:
   enabled: true
-  count: 320
+  duration: 12h
   period: 1m
-  packSize: 16
+  packSize: 25
   rotateAccounts: true
   rotateNodes: true
 
