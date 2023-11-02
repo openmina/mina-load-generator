@@ -1,6 +1,6 @@
 send:
   enabled: true
-  count: 1
+  count: 320
   period: 1m
   packSize: 16
   rotateAccounts: true
