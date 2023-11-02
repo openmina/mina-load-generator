@@ -4,5 +4,6 @@ send:
   period: 1m
   packSize: 16
   rotateAccounts: true
+  rotateNodes: true
 
 remote: tx-server-load-generator-server:80

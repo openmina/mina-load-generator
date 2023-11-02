@@ -136,5 +136,8 @@ template:
 {{- if .rotateAccounts }}
 "--rotate-keys"
 {{- end }}
+{{- if .rotateNodes }}
+"--rotate-nodes"
+{{- end }}
 {{ end }}
 {{ end }}
