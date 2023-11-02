@@ -134,10 +134,10 @@ template:
 "--count", "{{ . }}",
 {{ end }}
 {{- if .rotateAccounts }}
-"--rotate-keys"
+"--rotate-keys",
 {{- end }}
 {{- if .rotateNodes }}
-"--rotate-nodes"
+"--rotate-nodes",
 {{- end }}
 {{ end }}
 {{ end }}
