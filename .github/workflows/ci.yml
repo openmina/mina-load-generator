@@ -5,7 +5,17 @@
 #
 
 name: CI
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - main
+    paths_ignore:
+      - helm/**
+  pull_request:
+    branches:
+      - main
+    paths_ignore:
+      - helm/**
 jobs:
   test:
     runs-on: ubuntu-latest
