@@ -53,8 +53,6 @@ export class LoadGenerator {
   accountList: PrivateKey[] = [];
   bcTransactions: TransactionsAccess;
   log: Logger<any>;
-  nonce?: number;
-  count: number = 1;
 
   constructor(mina: MinaConnection, accounts: AccountSource) {
     this.mina = mina;
@@ -143,7 +141,7 @@ export class LoadGenerator {
   async setup(ttx: TransactionTemplate): Promise<void> {
     this.log.info('setting up transactions...');
     this.log.debug('sending setup transaction...');
-    const id = await this.send(ttx);
+    const [id, _] = await this.send(ttx);
     if (id.isSuccess) {
       this.log.debug('waiting for setup transaction to be included...');
       await this.bcTransactions.waitAll([id]);
@@ -159,7 +157,7 @@ export class LoadGenerator {
     ttx: TransactionTemplate,
     nonce?: number,
     retry?: boolean
-  ): Promise<TransactionId> {
+  ): Promise<[TransactionId, number | undefined]> {
     this.log.debug(`using nonce ${nonce}`);
     const tx = ttx.getSigned(nonce);
     this.log.silly('signed tx:', tx.toPretty());
@@ -182,9 +180,9 @@ export class LoadGenerator {
       });
     }
     if (nonce !== undefined) {
-      this.nonce = nonce + 1;
+      nonce = nonce + 1;
     }
-    return id;
+    return [id, nonce];
   }
 
   async account(publicKey: PublicKey) {
@@ -244,11 +242,11 @@ export class LoadGenerator {
   ): Promise<void> {
     let ttx = await txStore.getTransaction();
     const acc = await fetchAccount(ttx.getFeePayer(), this.mina);
-    this.nonce = acc.inferredNonce;
+    let nonce: number | undefined = acc.inferredNonce;
     this.log.info(
-      `sending transactions using ${ttx.getFeePayer().toBase58()} with nonce ${
-        this.nonce
-      } as a fee payer/signer`
+      `sending transactions using ${ttx
+        .getFeePayer()
+        .toBase58()} with nonce ${nonce} as a fee payer/signer`
     );
     let i = 0;
     let end =
@@ -259,10 +257,17 @@ export class LoadGenerator {
       let wait = setTimeout((interval || 0) * 1000, false);
       for (let pc = 0; pc < packSize; pc++) {
         this.log.info(`sending tx #${i}...`);
-        const id = await this.send(ttx, this.nonce);
+        const [id, n]: [TransactionId, number | undefined] = await this.send(
+          ttx,
+          nonce
+        );
         this.log.info(`tx #${i} is sent, hash is ${id.hash()}`);
+        nonce = n;
         i++;
         if (idsStore !== undefined) await idsStore.addTransactionId(id);
+        if (count && i >= count) {
+          return;
+        }
       }
       if (await Promise.any([wait, end])) {
         this.log.info(`duration timeout is reached`);
@@ -274,11 +279,11 @@ export class LoadGenerator {
       if (rotateSenders) {
         ttx = await txStore.getTransaction();
         const acc = await fetchAccount(ttx.getFeePayer(), this.mina);
-        this.nonce = acc.inferredNonce;
+        nonce = acc.inferredNonce;
         this.log.info(
           `sending transactions using ${ttx
             .getFeePayer()
-            .toBase58()} with nonce ${this.nonce} as a fee payer/signer`
+            .toBase58()} with nonce ${nonce} as a fee payer/signer`
         );
       }
     }
