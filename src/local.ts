@@ -96,6 +96,14 @@ const durationOption = () =>
     .argParser(durationParser)
     .conflicts(['count', 'infinite']);
 
+const validTimeOption = () =>
+  new Option(
+    '--valid-time <slots>',
+    'transaction validity time, in slots (unimplemented)'
+  )
+    .argParser(durationParser)
+    .hideHelp();
+
 const noWaitOption = () =>
   new Option('--no-wait', 'do not wait for transactions to be included');
 
@@ -113,6 +121,7 @@ export const runCommand = new Command()
   .addOption(durationOption())
   .addOption(infiniteOption())
   .addOption(periodOption())
+  .addOption(validTimeOption())
   .option(
     '--dump-tx-ids <file>',
     'dump transaction ids into the specified file upon completion'
@@ -132,6 +141,7 @@ LoadRegistry.registerLoadCommand(runCommand, async (opts, load, _name) => {
     infinite,
     period,
     dumpTxIds,
+    validTime,
     wait,
   } = opts;
 
@@ -164,6 +174,7 @@ LoadRegistry.registerLoadCommand(runCommand, async (opts, load, _name) => {
     interval: period,
     rotateSenders: rotateKeys,
     rotateNodes,
+    validTime,
   });
 
   intHandler = async () => {};

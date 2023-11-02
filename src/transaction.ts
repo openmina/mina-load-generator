@@ -36,10 +36,20 @@ export class TransactionTemplate {
     return PublicKey.fromBase58(this.tx.feePayer.body.publicKey);
   }
 
-  getSigned(nonce?: number | UInt32 | Field): Mina.Transaction {
+  getSigned(
+    nonce?: number | UInt32 | Field,
+    memo?: string,
+    validUntil?: number | string | UInt32
+  ): Mina.Transaction {
     const tx = restore(this.tx);
     if (nonce !== undefined)
       tx.transaction.feePayer.body.nonce = Nonce.from(nonce);
+    if (memo !== undefined) {
+      tx.transaction.memo = memo;
+    }
+    if (validUntil !== undefined) {
+      tx.transaction.feePayer.body.validUntil = UInt32.from(validUntil);
+    }
     return tx.sign(this.signers);
   }
 }

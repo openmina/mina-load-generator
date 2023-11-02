@@ -33,9 +33,13 @@ export interface SendConfig {
   readonly rotateNodes?: boolean;
 
   readonly rotateSenders?: boolean;
+
+  readonly validTime?: number;
 }
 
 const WAIT_MAX_RETRIES = 6;
+
+const DEFAULT_VALID_TIME = 290;
 
 export interface WaitConfig {
   // wait for a transaction: 20s * 30 attempts * 6 retries = 1h for each transaction.
@@ -141,7 +145,7 @@ export class LoadGenerator {
   async setup(ttx: TransactionTemplate): Promise<void> {
     this.log.info('setting up transactions...');
     this.log.debug('sending setup transaction...');
-    const [id, _] = await this.send(ttx);
+    const [id, _] = await this.send(ttx, DEFAULT_VALID_TIME);
     if (id.isSuccess) {
       this.log.debug('waiting for setup transaction to be included...');
       await this.bcTransactions.waitAll([id]);
@@ -153,13 +157,19 @@ export class LoadGenerator {
     }
   }
 
+  getTxParams(date: Date, _validTime: number): [string, number | undefined] {
+    return [date.toISOString(), undefined];
+  }
+
   async send(
     ttx: TransactionTemplate,
+    validTime: number,
     nonce?: number,
     retry?: boolean
   ): Promise<[TransactionId, number | undefined]> {
     this.log.debug(`using nonce ${nonce}`);
-    const tx = ttx.getSigned(nonce);
+    const [memo, validUntil] = this.getTxParams(new Date(), validTime);
+    const tx = ttx.getSigned(nonce, memo, validUntil);
     this.log.silly('signed tx:', tx.toPretty());
     const id = await sendTransaction(tx, this.mina);
     if (!id.isSuccess) {
@@ -172,7 +182,7 @@ export class LoadGenerator {
           isMinaGraphQL(this.mina)
         ) {
           let account = await fetchAccount(ttx.getFeePayer(), this.mina);
-          return await this.send(ttx, account.inferredNonce, true);
+          return await this.send(ttx, validTime, account.inferredNonce, true);
         }
       }
       throw new Error(`failed to send a transaction`, {
@@ -236,6 +246,7 @@ export class LoadGenerator {
       packSize = 1,
       duration,
       interval = 0,
+      validTime = DEFAULT_VALID_TIME,
       rotateNodes = false,
       rotateSenders = false,
     }: SendConfig
@@ -259,6 +270,7 @@ export class LoadGenerator {
         this.log.info(`sending tx #${i}...`);
         const [id, n]: [TransactionId, number | undefined] = await this.send(
           ttx,
+          validTime,
           nonce
         );
         this.log.info(`tx #${i} is sent, hash is ${id.hash()}`);
