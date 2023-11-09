@@ -95,6 +95,7 @@ http://{{ include "load-generator.fullname" . }}-server:{{ .Values.service.port 
 
 {{/* Generate transactions job */}}
 {{ define "load-generator.sendJobSpec" }}
+backoffLimit: 1024
 template:
   metadata:
     {{- with .Values.podAnnotations }}
@@ -108,7 +109,6 @@ template:
       {{- end }}
   spec:
     restartPolicy: OnFailure
-    backoffLimit: 1024
     containers:
       - name: main
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
