@@ -107,7 +107,8 @@ template:
       {{- toYaml . | nindent 8 }}
       {{- end }}
   spec:
-    restartPolicy: Never
+    restartPolicy: OnFailure
+    backoffLimit: 1024
     containers:
       - name: main
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
